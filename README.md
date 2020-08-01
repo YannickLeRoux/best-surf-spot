@@ -1,0 +1,1 @@
+# best-surf-spot
