@@ -25,11 +25,17 @@ import Wind exposing (windDirectionDecoder)
 type Model
     = Loading
         { surfSpots : Maybe (List SurfSpot)
-        , currentConditions : Maybe CurrentConditions
+        , swellDirection : Maybe (List Direction)
+        , windDirection : Maybe Direction
+        , surfHeight : Maybe ( Int, Int )
+        , tide : Maybe Tide
         }
     | Success
         { surfSpots : List SurfSpot
-        , currentConditions : CurrentConditions
+        , swellDirection : List Direction
+        , windDirection : Direction
+        , surfHeight : ( Int, Int )
+        , tide : Tide
         }
     | Error String
 
@@ -38,7 +44,10 @@ initialModel : Model
 initialModel =
     Loading
         { surfSpots = Nothing
-        , currentConditions = Nothing
+        , swellDirection = Nothing
+        , windDirection = Nothing
+        , surfHeight = Nothing
+        , tide = Nothing
         }
 
 
@@ -55,6 +64,10 @@ initialCmd =
         [ Http.get { url = getSpotsFromDBUrl, expect = Http.expectJson GotSurfSpots (list spotDecoder) }
         , Http.get { url = getWindUrl, expect = Http.expectJson GotWindDirection windDirectionDecoder }
         ]
+
+
+type FiveMaybes a b c d e
+    = FiveMaybes (Maybe a) (Maybe b) (Maybe c) (Maybe d) (Maybe e)
 
 
 errorToString : Http.Error -> String
@@ -85,15 +98,6 @@ type Msg
     | GotWindDirection (Result Http.Error Direction)
 
 
-updateWindDirection : Direction -> Model -> Model
-updateWindDirection direction ({ currentConditions } as model) =
-    case model of
-        Loading { currentConditions } ->
-            case direction of
-                Just windDir ->
-                    Loading {}
-
-
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     let
@@ -108,11 +112,17 @@ update msg model =
                             Error ("Error fetching surf spots:" ++ errorToString errorMsg)
 
                         GotWindDirection (Ok windDirection) ->
-                            checkIfLoaded { loadingData | currentConditions = updateWindDirection windDirection model }
+                            checkIfLoaded { loadingData | windDirection = Just windDirection }
+
+                        GotWindDirection (Err errorMsg) ->
+                            Error ("Error fetching wind info:" ++ errorToString errorMsg)
 
                 Success loadedModel ->
                     case msg of
                         GotSurfSpots _ ->
+                            model
+
+                        GotWindDirection _ ->
                             model
 
                 Error _ ->
@@ -121,17 +131,27 @@ update msg model =
     ( updatedModel, Cmd.none )
 
 
+
+-- Check if all data is loaded, if so change model to Sucess
+
+
 checkIfLoaded :
     { surfSpots : Maybe (List SurfSpot)
-    , currentConditions : Maybe CurrentConditions
+    , swellDirection : Maybe (List Direction)
+    , windDirection : Maybe Direction
+    , surfHeight : Maybe ( Int, Int )
+    , tide : Maybe Tide
     }
     -> Model
 checkIfLoaded data =
-    case ( data.surfSpots, data.currentConditions ) of
-        ( Just surfSpots, Just currentConditions ) ->
+    case FiveMaybes data.surfSpots data.swellDirection data.windDirection data.surfHeight data.tide of
+        FiveMaybes (Just surfSpots) (Just swellDirection) (Just windDirection) (Just surfHeight) (Just tide) ->
             Success
                 { surfSpots = surfSpots
-                , currentConditions = currentConditions
+                , swellDirection = swellDirection
+                , windDirection = windDirection
+                , surfHeight = surfHeight
+                , tide = tide
                 }
 
         _ ->
