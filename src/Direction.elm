@@ -1,4 +1,4 @@
-module Direction exposing (Direction, degreeToDirectionDecoder, parseDegreeToDirection, parseStringToDirection, stringToDirectionDecoder)
+module Direction exposing (Direction, degreeToDirectionDecoder, fromResultDirection, parseDegreeToDirection, parseStringToDirection, stringToDirectionDecoder)
 
 import Json.Decode as JD exposing (Decoder)
 
@@ -24,16 +24,16 @@ type Direction
 
 stringToDirectionDecoder : Decoder Direction
 stringToDirectionDecoder =
-    JD.string |> JD.andThen (fromResult << parseStringToDirection)
+    JD.string |> JD.andThen (fromResultDirection << parseStringToDirection)
 
 
 degreeToDirectionDecoder : Decoder Direction
 degreeToDirectionDecoder =
-    JD.float |> JD.andThen (fromResult << parseDegreeToDirection)
+    JD.float |> JD.andThen (fromResultDirection << parseDegreeToDirection)
 
 
-fromResult : Result String a -> Decoder a
-fromResult result =
+fromResultDirection : Result String a -> Decoder a
+fromResultDirection result =
     case result of
         Ok a ->
             JD.succeed a

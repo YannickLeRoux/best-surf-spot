@@ -2,7 +2,7 @@ module Main exposing (..)
 
 import Browser
 import CurrentConditions exposing (CurrentConditions)
-import Direction exposing (Direction(..))
+import Direction exposing (Direction(..), fromResultDirection, parseDegreeToDirection)
 import Element exposing (..)
 import Element.Background as Background
 import Element.Border as Border
@@ -13,7 +13,9 @@ import Http
 import IdealConditions exposing (IdealConditions)
 import Json.Decode exposing (Decoder, int, list, string, succeed)
 import Json.Decode.Pipeline exposing (optional, required)
+import Maybe.Extra exposing (combine)
 import SurfSpot exposing (SurfSpot, spotDecoder)
+import Swell exposing (Swell, swellsDecoder)
 import Tide exposing (Tide(..), parseTide)
 import Wind exposing (windDirectionDecoder)
 
@@ -59,10 +61,14 @@ initialCmd =
 
         getWindUrl =
             "https://services.surfline.com/kbyg/spots/forecasts/wind?spotId=5842041f4e65fad6a770883b&days=1&intervalHours=6"
+
+        getWaveUrl =
+            "https://services.surfline.com/kbyg/spots/forecasts/wave?spotId=5842041f4e65fad6a770883b&days=1&intervalHours=6"
     in
     Cmd.batch
         [ Http.get { url = getSpotsFromDBUrl, expect = Http.expectJson GotSurfSpots (list spotDecoder) }
         , Http.get { url = getWindUrl, expect = Http.expectJson GotWindDirection windDirectionDecoder }
+        , Http.get { url = getWaveUrl, expect = Http.expectJson GotSwells swellsDecoder }
         ]
 
 
@@ -96,6 +102,7 @@ errorToString err =
 type Msg
     = GotSurfSpots (Result Http.Error (List SurfSpot))
     | GotWindDirection (Result Http.Error Direction)
+    | GotSwells (Result Http.Error (List Swell))
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -108,14 +115,20 @@ update msg model =
                         GotSurfSpots (Ok surfSpots) ->
                             checkIfLoaded { loadingData | surfSpots = Just surfSpots }
 
-                        GotSurfSpots (Err errorMsg) ->
-                            Error ("Error fetching surf spots:" ++ errorToString errorMsg)
-
                         GotWindDirection (Ok windDirection) ->
                             checkIfLoaded { loadingData | windDirection = Just windDirection }
 
+                        GotSwells (Ok swells) ->
+                            checkIfLoaded { loadingData | swellDirection = getDirectionsFromSwells swells }
+
+                        GotSurfSpots (Err errorMsg) ->
+                            Error ("Error fetching surf spots:" ++ errorToString errorMsg)
+
                         GotWindDirection (Err errorMsg) ->
                             Error ("Error fetching wind info:" ++ errorToString errorMsg)
+
+                        GotSwells (Err errorMsg) ->
+                            Error ("Error fetching swells info:" ++ errorToString errorMsg)
 
                 Success loadedModel ->
                     case msg of
@@ -125,10 +138,22 @@ update msg model =
                         GotWindDirection _ ->
                             model
 
+                        GotSwells _ ->
+                            model
+
                 Error _ ->
                     model
     in
     ( updatedModel, Cmd.none )
+
+
+
+--  extract a sorted array of direction from list of swells data
+
+
+getDirectionsFromSwells : List Swell -> Maybe (List Direction)
+getDirectionsFromSwells swells =
+    combine <| List.map Result.toMaybe <| List.map parseDegreeToDirection <| List.map .direction <| List.sortBy .height <| swells
 
 
 

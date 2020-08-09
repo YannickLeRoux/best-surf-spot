@@ -10728,6 +10728,9 @@ var $elm$browser$Browser$element = _Browser_element;
 var $author$project$Main$GotSurfSpots = function (a) {
 	return {$: 'GotSurfSpots', a: a};
 };
+var $author$project$Main$GotSwells = function (a) {
+	return {$: 'GotSwells', a: a};
+};
 var $author$project$Main$GotWindDirection = function (a) {
 	return {$: 'GotWindDirection', a: a};
 };
@@ -11014,7 +11017,7 @@ var $NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required = F3(
 			decoder);
 	});
 var $elm$json$Json$Decode$fail = _Json_fail;
-var $author$project$Direction$fromResult = function (result) {
+var $author$project$Direction$fromResultDirection = function (result) {
 	if (result.$ === 'Ok') {
 		var a = result.a;
 		return $elm$json$Json$Decode$succeed(a);
@@ -11079,7 +11082,7 @@ var $author$project$Direction$parseStringToDirection = function (string) {
 };
 var $author$project$Direction$stringToDirectionDecoder = A2(
 	$elm$json$Json$Decode$andThen,
-	A2($elm$core$Basics$composeL, $author$project$Direction$fromResult, $author$project$Direction$parseStringToDirection),
+	A2($elm$core$Basics$composeL, $author$project$Direction$fromResultDirection, $author$project$Direction$parseStringToDirection),
 	$elm$json$Json$Decode$string);
 var $author$project$Tide$fromResult = function (result) {
 	if (result.$ === 'Ok') {
@@ -11142,12 +11145,48 @@ var $author$project$SurfSpot$spotDecoder = A2(
 				'id',
 				$elm$json$Json$Decode$int,
 				$elm$json$Json$Decode$succeed($author$project$SurfSpot$SurfSpot)))));
+var $author$project$Swell$Swell = F5(
+	function (height, period, direction, directionMin, optimalScore) {
+		return {direction: direction, directionMin: directionMin, height: height, optimalScore: optimalScore, period: period};
+	});
+var $author$project$Swell$swellDecoder = A3(
+	$NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
+	'optimalScore',
+	$elm$json$Json$Decode$int,
+	A3(
+		$NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
+		'directionMin',
+		$elm$json$Json$Decode$float,
+		A3(
+			$NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
+			'direction',
+			$elm$json$Json$Decode$float,
+			A3(
+				$NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
+				'period',
+				$elm$json$Json$Decode$int,
+				A3(
+					$NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
+					'height',
+					$elm$json$Json$Decode$float,
+					$elm$json$Json$Decode$succeed($author$project$Swell$Swell))))));
+var $author$project$Swell$swellsDecoder = A2(
+	$elm$json$Json$Decode$at,
+	_List_fromArray(
+		['data', 'wave']),
+	A2(
+		$elm$json$Json$Decode$index,
+		0,
+		A2(
+			$elm$json$Json$Decode$field,
+			'swells',
+			$elm$json$Json$Decode$list($author$project$Swell$swellDecoder))));
 var $author$project$Direction$parseDegreeToDirection = function (degree) {
 	return (degree < 22.5) ? $elm$core$Result$Ok($author$project$Direction$N) : ((degree < 45.0) ? $elm$core$Result$Ok($author$project$Direction$NNE) : ((degree < 67.5) ? $elm$core$Result$Ok($author$project$Direction$NE) : ((degree < 90) ? $elm$core$Result$Ok($author$project$Direction$ENE) : ((degree < 112.5) ? $elm$core$Result$Ok($author$project$Direction$E) : ((degree < 135.0) ? $elm$core$Result$Ok($author$project$Direction$ESE) : ((degree < 157.5) ? $elm$core$Result$Ok($author$project$Direction$SE) : ((degree < 180.0) ? $elm$core$Result$Ok($author$project$Direction$SSE) : ((degree < 202.5) ? $elm$core$Result$Ok($author$project$Direction$S) : ((degree < 225.0) ? $elm$core$Result$Ok($author$project$Direction$SSW) : ((degree < 247.5) ? $elm$core$Result$Ok($author$project$Direction$SW) : ((degree < 270.0) ? $elm$core$Result$Ok($author$project$Direction$WSW) : ((degree < 292.5) ? $elm$core$Result$Ok($author$project$Direction$W) : ((degree < 315.0) ? $elm$core$Result$Ok($author$project$Direction$WNW) : ((degree < 337.5) ? $elm$core$Result$Ok($author$project$Direction$NW) : $elm$core$Result$Ok($author$project$Direction$NNW)))))))))))))));
 };
 var $author$project$Direction$degreeToDirectionDecoder = A2(
 	$elm$json$Json$Decode$andThen,
-	A2($elm$core$Basics$composeL, $author$project$Direction$fromResult, $author$project$Direction$parseDegreeToDirection),
+	A2($elm$core$Basics$composeL, $author$project$Direction$fromResultDirection, $author$project$Direction$parseDegreeToDirection),
 	$elm$json$Json$Decode$float);
 var $author$project$Wind$windDirectionDecoder = A2(
 	$elm$json$Json$Decode$at,
@@ -11159,6 +11198,7 @@ var $author$project$Wind$windDirectionDecoder = A2(
 		A2($elm$json$Json$Decode$field, 'direction', $author$project$Direction$degreeToDirectionDecoder)));
 var $author$project$Main$initialCmd = function () {
 	var getWindUrl = 'https://services.surfline.com/kbyg/spots/forecasts/wind?spotId=5842041f4e65fad6a770883b&days=1&intervalHours=6';
+	var getWaveUrl = 'https://services.surfline.com/kbyg/spots/forecasts/wave?spotId=5842041f4e65fad6a770883b&days=1&intervalHours=6';
 	var getSpotsFromDBUrl = 'http://localhost:3000/spots';
 	return $elm$core$Platform$Cmd$batch(
 		_List_fromArray(
@@ -11175,6 +11215,11 @@ var $author$project$Main$initialCmd = function () {
 				{
 					expect: A2($elm$http$Http$expectJson, $author$project$Main$GotWindDirection, $author$project$Wind$windDirectionDecoder),
 					url: getWindUrl
+				}),
+				$elm$http$Http$get(
+				{
+					expect: A2($elm$http$Http$expectJson, $author$project$Main$GotSwells, $author$project$Swell$swellsDecoder),
+					url: getWaveUrl
 				})
 			]));
 }();
@@ -11226,47 +11271,113 @@ var $author$project$Main$errorToString = function (err) {
 			return 'Returning ' + ($elm$core$String$fromInt(status) + ' status');
 	}
 };
+var $elm$core$Maybe$map2 = F3(
+	function (func, ma, mb) {
+		if (ma.$ === 'Nothing') {
+			return $elm$core$Maybe$Nothing;
+		} else {
+			var a = ma.a;
+			if (mb.$ === 'Nothing') {
+				return $elm$core$Maybe$Nothing;
+			} else {
+				var b = mb.a;
+				return $elm$core$Maybe$Just(
+					A2(func, a, b));
+			}
+		}
+	});
+var $elm_community$maybe_extra$Maybe$Extra$combine = A2(
+	$elm$core$List$foldr,
+	$elm$core$Maybe$map2($elm$core$List$cons),
+	$elm$core$Maybe$Just(_List_Nil));
+var $elm$core$List$sortBy = _List_sortBy;
+var $elm$core$Result$toMaybe = function (result) {
+	if (result.$ === 'Ok') {
+		var v = result.a;
+		return $elm$core$Maybe$Just(v);
+	} else {
+		return $elm$core$Maybe$Nothing;
+	}
+};
+var $author$project$Main$getDirectionsFromSwells = function (swells) {
+	return $elm_community$maybe_extra$Maybe$Extra$combine(
+		A2(
+			$elm$core$List$map,
+			$elm$core$Result$toMaybe,
+			A2(
+				$elm$core$List$map,
+				$author$project$Direction$parseDegreeToDirection,
+				A2(
+					$elm$core$List$map,
+					function ($) {
+						return $.direction;
+					},
+					A2(
+						$elm$core$List$sortBy,
+						function ($) {
+							return $.height;
+						},
+						swells)))));
+};
 var $author$project$Main$update = F2(
 	function (msg, model) {
 		var updatedModel = function () {
 			switch (model.$) {
 				case 'Loading':
 					var loadingData = model.a;
-					if (msg.$ === 'GotSurfSpots') {
-						if (msg.a.$ === 'Ok') {
-							var surfSpots = msg.a.a;
-							return $author$project$Main$checkIfLoaded(
-								_Utils_update(
-									loadingData,
-									{
-										surfSpots: $elm$core$Maybe$Just(surfSpots)
-									}));
-						} else {
-							var errorMsg = msg.a.a;
-							return $author$project$Main$Error(
-								'Error fetching surf spots:' + $author$project$Main$errorToString(errorMsg));
-						}
-					} else {
-						if (msg.a.$ === 'Ok') {
-							var windDirection = msg.a.a;
-							return $author$project$Main$checkIfLoaded(
-								_Utils_update(
-									loadingData,
-									{
-										windDirection: $elm$core$Maybe$Just(windDirection)
-									}));
-						} else {
-							var errorMsg = msg.a.a;
-							return $author$project$Main$Error(
-								'Error fetching wind info:' + $author$project$Main$errorToString(errorMsg));
-						}
+					switch (msg.$) {
+						case 'GotSurfSpots':
+							if (msg.a.$ === 'Ok') {
+								var surfSpots = msg.a.a;
+								return $author$project$Main$checkIfLoaded(
+									_Utils_update(
+										loadingData,
+										{
+											surfSpots: $elm$core$Maybe$Just(surfSpots)
+										}));
+							} else {
+								var errorMsg = msg.a.a;
+								return $author$project$Main$Error(
+									'Error fetching surf spots:' + $author$project$Main$errorToString(errorMsg));
+							}
+						case 'GotWindDirection':
+							if (msg.a.$ === 'Ok') {
+								var windDirection = msg.a.a;
+								return $author$project$Main$checkIfLoaded(
+									_Utils_update(
+										loadingData,
+										{
+											windDirection: $elm$core$Maybe$Just(windDirection)
+										}));
+							} else {
+								var errorMsg = msg.a.a;
+								return $author$project$Main$Error(
+									'Error fetching wind info:' + $author$project$Main$errorToString(errorMsg));
+							}
+						default:
+							if (msg.a.$ === 'Ok') {
+								var swells = msg.a.a;
+								return $author$project$Main$checkIfLoaded(
+									_Utils_update(
+										loadingData,
+										{
+											swellDirection: $author$project$Main$getDirectionsFromSwells(swells)
+										}));
+							} else {
+								var errorMsg = msg.a.a;
+								return $author$project$Main$Error(
+									'Error fetching swells info:' + $author$project$Main$errorToString(errorMsg));
+							}
 					}
 				case 'Success':
 					var loadedModel = model.a;
-					if (msg.$ === 'GotSurfSpots') {
-						return model;
-					} else {
-						return model;
+					switch (msg.$) {
+						case 'GotSurfSpots':
+							return model;
+						case 'GotWindDirection':
+							return model;
+						default:
+							return model;
 					}
 				default:
 					return model;
@@ -16992,7 +17103,7 @@ var $author$project$Main$main = $elm$browser$Browser$element(
 		view: $author$project$Main$view
 	});
 _Platform_export({'Main':{'init':$author$project$Main$main(
-	$elm$json$Json$Decode$succeed(_Utils_Tuple0))({"versions":{"elm":"0.19.1"},"types":{"message":"Main.Msg","aliases":{"IdealConditions.IdealConditions":{"args":[],"type":"{ swellDirection : List.List Direction.Direction, windDirection : List.List Direction.Direction, surfHeight : ( Basics.Int, Basics.Int ), tide : Tide.Tide }"},"SurfSpot.SurfSpot":{"args":[],"type":"{ id : Basics.Int, name : String.String, idealConditions : IdealConditions.IdealConditions, score : Basics.Int }"}},"unions":{"Main.Msg":{"args":[],"tags":{"GotSurfSpots":["Result.Result Http.Error (List.List SurfSpot.SurfSpot)"],"GotWindDirection":["Result.Result Http.Error Direction.Direction"]}},"Direction.Direction":{"args":[],"tags":{"N":[],"E":[],"S":[],"W":[],"NE":[],"SE":[],"SW":[],"NW":[],"NNE":[],"ENE":[],"ESE":[],"SSE":[],"SSW":[],"WSW":[],"WNW":[],"NNW":[]}},"Http.Error":{"args":[],"tags":{"BadUrl":["String.String"],"Timeout":[],"NetworkError":[],"BadStatus":["Basics.Int"],"BadBody":["String.String"]}},"Basics.Int":{"args":[],"tags":{"Int":[]}},"List.List":{"args":["a"],"tags":{}},"Result.Result":{"args":["error","value"],"tags":{"Ok":["value"],"Err":["error"]}},"String.String":{"args":[],"tags":{"String":[]}},"Tide.Tide":{"args":[],"tags":{"Low":[],"Mid":[],"High":[]}}}}})}});}(this));
+	$elm$json$Json$Decode$succeed(_Utils_Tuple0))({"versions":{"elm":"0.19.1"},"types":{"message":"Main.Msg","aliases":{"IdealConditions.IdealConditions":{"args":[],"type":"{ swellDirection : List.List Direction.Direction, windDirection : List.List Direction.Direction, surfHeight : ( Basics.Int, Basics.Int ), tide : Tide.Tide }"},"SurfSpot.SurfSpot":{"args":[],"type":"{ id : Basics.Int, name : String.String, idealConditions : IdealConditions.IdealConditions, score : Basics.Int }"},"Swell.Swell":{"args":[],"type":"{ height : Basics.Float, period : Basics.Int, direction : Basics.Float, directionMin : Basics.Float, optimalScore : Basics.Int }"}},"unions":{"Main.Msg":{"args":[],"tags":{"GotSurfSpots":["Result.Result Http.Error (List.List SurfSpot.SurfSpot)"],"GotWindDirection":["Result.Result Http.Error Direction.Direction"],"GotSwells":["Result.Result Http.Error (List.List Swell.Swell)"]}},"Direction.Direction":{"args":[],"tags":{"N":[],"E":[],"S":[],"W":[],"NE":[],"SE":[],"SW":[],"NW":[],"NNE":[],"ENE":[],"ESE":[],"SSE":[],"SSW":[],"WSW":[],"WNW":[],"NNW":[]}},"Http.Error":{"args":[],"tags":{"BadUrl":["String.String"],"Timeout":[],"NetworkError":[],"BadStatus":["Basics.Int"],"BadBody":["String.String"]}},"Basics.Float":{"args":[],"tags":{"Float":[]}},"Basics.Int":{"args":[],"tags":{"Int":[]}},"List.List":{"args":["a"],"tags":{}},"Result.Result":{"args":["error","value"],"tags":{"Ok":["value"],"Err":["error"]}},"String.String":{"args":[],"tags":{"String":[]}},"Tide.Tide":{"args":[],"tags":{"Low":[],"Mid":[],"High":[]}}}}})}});}(this));
 
   var app = Elm.Main.init({ node: document.getElementById("elm") });
 }
