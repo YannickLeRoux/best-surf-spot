@@ -14,9 +14,10 @@ import IdealConditions exposing (IdealConditions)
 import Json.Decode exposing (Decoder, int, list, string, succeed)
 import Json.Decode.Pipeline exposing (optional, required)
 import Maybe.Extra exposing (combine)
+import SurfHeight exposing (SurfHeight, heightDecoder)
 import SurfSpot exposing (SurfSpot, spotDecoder)
 import Swell exposing (Swell, swellsDecoder)
-import Tide exposing (Tide(..), parseTide)
+import Tide exposing (Tide(..), tideDataDecoder)
 import Wind exposing (windDirectionDecoder)
 
 
@@ -29,14 +30,14 @@ type Model
         { surfSpots : Maybe (List SurfSpot)
         , swellDirection : Maybe (List Direction)
         , windDirection : Maybe Direction
-        , surfHeight : Maybe ( Int, Int )
+        , surfHeight : Maybe ( Float, Float )
         , tide : Maybe Tide
         }
     | Success
         { surfSpots : List SurfSpot
         , swellDirection : List Direction
         , windDirection : Direction
-        , surfHeight : ( Int, Int )
+        , surfHeight : ( Float, Float )
         , tide : Tide
         }
     | Error String
@@ -64,11 +65,16 @@ initialCmd =
 
         getWaveUrl =
             "https://services.surfline.com/kbyg/spots/forecasts/wave?spotId=5842041f4e65fad6a770883b&days=1&intervalHours=6"
+
+        getTideUrl =
+            "https://services.surfline.com/kbyg/spots/forecasts/tides?spotId=5842041f4e65fad6a770883b&days=1"
     in
     Cmd.batch
         [ Http.get { url = getSpotsFromDBUrl, expect = Http.expectJson GotSurfSpots (list spotDecoder) }
         , Http.get { url = getWindUrl, expect = Http.expectJson GotWindDirection windDirectionDecoder }
         , Http.get { url = getWaveUrl, expect = Http.expectJson GotSwells swellsDecoder }
+        , Http.get { url = getWaveUrl, expect = Http.expectJson GotHeight heightDecoder }
+        , Http.get { url = getTideUrl, expect = Http.expectJson GotTide tideDataDecoder }
         ]
 
 
@@ -103,6 +109,8 @@ type Msg
     = GotSurfSpots (Result Http.Error (List SurfSpot))
     | GotWindDirection (Result Http.Error Direction)
     | GotSwells (Result Http.Error (List Swell))
+    | GotTide (Result Http.Error Tide)
+    | GotHeight (Result Http.Error SurfHeight)
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -121,6 +129,12 @@ update msg model =
                         GotSwells (Ok swells) ->
                             checkIfLoaded { loadingData | swellDirection = getDirectionsFromSwells swells }
 
+                        GotTide (Ok tide) ->
+                            checkIfLoaded { loadingData | tide = Just tide }
+
+                        GotHeight (Ok height) ->
+                            checkIfLoaded { loadingData | surfHeight = Just height }
+
                         GotSurfSpots (Err errorMsg) ->
                             Error ("Error fetching surf spots:" ++ errorToString errorMsg)
 
@@ -129,6 +143,12 @@ update msg model =
 
                         GotSwells (Err errorMsg) ->
                             Error ("Error fetching swells info:" ++ errorToString errorMsg)
+
+                        GotTide (Err errorMsg) ->
+                            Error ("Error fetching tide info:" ++ errorToString errorMsg)
+
+                        GotHeight (Err errorMsg) ->
+                            Error ("Error fetching surf height info:" ++ errorToString errorMsg)
 
                 Success loadedModel ->
                     case msg of
@@ -139,6 +159,12 @@ update msg model =
                             model
 
                         GotSwells _ ->
+                            model
+
+                        GotTide _ ->
+                            model
+
+                        GotHeight _ ->
                             model
 
                 Error _ ->
@@ -153,7 +179,7 @@ update msg model =
 
 getDirectionsFromSwells : List Swell -> Maybe (List Direction)
 getDirectionsFromSwells swells =
-    combine <| List.map Result.toMaybe <| List.map parseDegreeToDirection <| List.map .direction <| List.sortBy .height <| swells
+    combine <| List.map (Result.toMaybe << parseDegreeToDirection << .direction) <| List.sortBy .height <| swells
 
 
 
@@ -164,7 +190,7 @@ checkIfLoaded :
     { surfSpots : Maybe (List SurfSpot)
     , swellDirection : Maybe (List Direction)
     , windDirection : Maybe Direction
-    , surfHeight : Maybe ( Int, Int )
+    , surfHeight : Maybe ( Float, Float )
     , tide : Maybe Tide
     }
     -> Model

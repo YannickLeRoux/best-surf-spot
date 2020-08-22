@@ -1,12 +1,33 @@
-module Tide exposing (Tide(..), parseTide, tideDecoder)
+module Tide exposing (Tide(..), parseTide, tideDataDecoder, tideDecoder)
 
-import Json.Decode as JD exposing (Decoder)
+import Json.Decode as JD exposing (Decoder, at, field, float, index, int, list, string, succeed)
+import Json.Decode.Pipeline exposing (required)
 
 
 type Tide
     = Low
     | Mid
     | High
+    | Normal --
+
+
+
+-- type alias TideDataPoint =
+--     { timestamp : Int
+--     , type_ : String
+--     , height : Float
+--     }
+-- tideDataDecoder : Decoder TideDataPoint
+-- tideDataDecoder =
+--     succeed TideDataPoint
+--         |> required "timestamp" int
+--         |> required "type" string
+--         |> required "height" float
+
+
+tideDataDecoder : Decoder Tide
+tideDataDecoder =
+    at [ "data", "tides" ] <| index 0 <| field "type" tideDecoder
 
 
 tideDecoder : Decoder Tide
@@ -30,7 +51,7 @@ parseTide string =
         "Low" ->
             Ok Low
 
-        "Mid" ->
+        "NORMAL" ->
             Ok Mid
 
         "High" ->
