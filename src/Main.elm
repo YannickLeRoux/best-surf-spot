@@ -17,7 +17,7 @@ import Maybe.Extra exposing (combine)
 import SurfHeight exposing (SurfHeight, heightDecoder)
 import SurfSpot exposing (SurfSpot, spotDecoder)
 import Swell exposing (Swell, swellsDecoder)
-import Tide exposing (Tide(..), tideDataDecoder)
+import Tide exposing (Tide(..), TideDataPoint, listTideDecoder, tideFromTides)
 import Wind exposing (windDirectionDecoder)
 
 
@@ -74,7 +74,10 @@ initialCmd =
         , Http.get { url = getWindUrl, expect = Http.expectJson GotWindDirection windDirectionDecoder }
         , Http.get { url = getWaveUrl, expect = Http.expectJson GotSwells swellsDecoder }
         , Http.get { url = getWaveUrl, expect = Http.expectJson GotHeight heightDecoder }
-        , Http.get { url = getTideUrl, expect = Http.expectJson GotTide tideDataDecoder }
+
+        -- totlally not loving to have to deal with the list of tide values here
+        -- would love a decoder that finishes the job
+        , Http.get { url = getTideUrl, expect = Http.expectJson GotTide listTideDecoder }
         ]
 
 
@@ -109,7 +112,7 @@ type Msg
     = GotSurfSpots (Result Http.Error (List SurfSpot))
     | GotWindDirection (Result Http.Error Direction)
     | GotSwells (Result Http.Error (List Swell))
-    | GotTide (Result Http.Error Tide)
+    | GotTide (Result Http.Error (List TideDataPoint))
     | GotHeight (Result Http.Error SurfHeight)
 
 
@@ -129,8 +132,8 @@ update msg model =
                         GotSwells (Ok swells) ->
                             checkIfLoaded { loadingData | swellDirection = getDirectionsFromSwells swells }
 
-                        GotTide (Ok tide) ->
-                            checkIfLoaded { loadingData | tide = Just tide }
+                        GotTide (Ok tides) ->
+                            checkIfLoaded { loadingData | tide = Just (tideFromTides tides) }
 
                         GotHeight (Ok height) ->
                             checkIfLoaded { loadingData | surfHeight = Just height }
@@ -179,7 +182,12 @@ update msg model =
 
 getDirectionsFromSwells : List Swell -> Maybe (List Direction)
 getDirectionsFromSwells swells =
-    combine <| List.map (Result.toMaybe << parseDegreeToDirection << .direction) <| List.sortBy .height <| swells
+    combine <|
+        List.map (Result.toMaybe << parseDegreeToDirection << .direction) <|
+            List.reverse <|
+                List.sortBy .height <|
+                    List.filter (\x -> x.height > 0) <|
+                        swells
 
 
 

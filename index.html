@@ -11026,11 +11026,40 @@ var $author$project$SurfHeight$heightDecoder = A2(
 		$elm$json$Json$Decode$index,
 		0,
 		A2($elm$json$Json$Decode$field, 'surf', $author$project$SurfHeight$minMaxDecoder)));
+var $author$project$Tide$TideDataPoint = F3(
+	function (timestamp, type_, height) {
+		return {height: height, timestamp: timestamp, type_: type_};
+	});
+var $NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$custom = $elm$json$Json$Decode$map2($elm$core$Basics$apR);
+var $NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required = F3(
+	function (key, valDecoder, decoder) {
+		return A2(
+			$NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$custom,
+			A2($elm$json$Json$Decode$field, key, valDecoder),
+			decoder);
+	});
+var $author$project$Tide$tideDataDecoder = A3(
+	$NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
+	'height',
+	$elm$json$Json$Decode$float,
+	A3(
+		$NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
+		'type',
+		$elm$json$Json$Decode$string,
+		A3(
+			$NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
+			'timestamp',
+			$elm$json$Json$Decode$int,
+			$elm$json$Json$Decode$succeed($author$project$Tide$TideDataPoint))));
+var $author$project$Tide$listTideDecoder = A2(
+	$elm$json$Json$Decode$at,
+	_List_fromArray(
+		['data', 'tides']),
+	$elm$json$Json$Decode$list($author$project$Tide$tideDataDecoder));
 var $author$project$SurfSpot$SurfSpot = F4(
 	function (id, name, idealConditions, score) {
 		return {id: id, idealConditions: idealConditions, name: name, score: score};
 	});
-var $NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$custom = $elm$json$Json$Decode$map2($elm$core$Basics$apR);
 var $NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$hardcoded = A2($elm$core$Basics$composeR, $elm$json$Json$Decode$succeed, $NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$custom);
 var $author$project$IdealConditions$IdealConditions = F4(
 	function (swellDirection, windDirection, surfHeight, tide) {
@@ -11050,13 +11079,6 @@ var $author$project$IdealConditions$arrayAsTuple2 = F2(
 					A2($elm$json$Json$Decode$index, 1, b));
 			},
 			A2($elm$json$Json$Decode$index, 0, a));
-	});
-var $NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required = F3(
-	function (key, valDecoder, decoder) {
-		return A2(
-			$NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$custom,
-			A2($elm$json$Json$Decode$field, key, valDecoder),
-			decoder);
 	});
 var $author$project$Direction$fromResultDirection = function (result) {
 	if (result.$ === 'Ok') {
@@ -11222,14 +11244,6 @@ var $author$project$Swell$swellsDecoder = A2(
 			$elm$json$Json$Decode$field,
 			'swells',
 			$elm$json$Json$Decode$list($author$project$Swell$swellDecoder))));
-var $author$project$Tide$tideDataDecoder = A2(
-	$elm$json$Json$Decode$at,
-	_List_fromArray(
-		['data', 'tides']),
-	A2(
-		$elm$json$Json$Decode$index,
-		0,
-		A2($elm$json$Json$Decode$field, 'type', $author$project$Tide$tideDecoder)));
 var $author$project$Direction$parseDegreeToDirection = function (degree) {
 	return (degree < 22.5) ? $elm$core$Result$Ok($author$project$Direction$N) : ((degree < 45.0) ? $elm$core$Result$Ok($author$project$Direction$NNE) : ((degree < 67.5) ? $elm$core$Result$Ok($author$project$Direction$NE) : ((degree < 90) ? $elm$core$Result$Ok($author$project$Direction$ENE) : ((degree < 112.5) ? $elm$core$Result$Ok($author$project$Direction$E) : ((degree < 135.0) ? $elm$core$Result$Ok($author$project$Direction$ESE) : ((degree < 157.5) ? $elm$core$Result$Ok($author$project$Direction$SE) : ((degree < 180.0) ? $elm$core$Result$Ok($author$project$Direction$SSE) : ((degree < 202.5) ? $elm$core$Result$Ok($author$project$Direction$S) : ((degree < 225.0) ? $elm$core$Result$Ok($author$project$Direction$SSW) : ((degree < 247.5) ? $elm$core$Result$Ok($author$project$Direction$SW) : ((degree < 270.0) ? $elm$core$Result$Ok($author$project$Direction$WSW) : ((degree < 292.5) ? $elm$core$Result$Ok($author$project$Direction$W) : ((degree < 315.0) ? $elm$core$Result$Ok($author$project$Direction$WNW) : ((degree < 337.5) ? $elm$core$Result$Ok($author$project$Direction$NW) : $elm$core$Result$Ok($author$project$Direction$NNW)))))))))))))));
 };
@@ -11278,7 +11292,7 @@ var $author$project$Main$initialCmd = function () {
 				}),
 				$elm$http$Http$get(
 				{
-					expect: A2($elm$http$Http$expectJson, $author$project$Main$GotTide, $author$project$Tide$tideDataDecoder),
+					expect: A2($elm$http$Http$expectJson, $author$project$Main$GotTide, $author$project$Tide$listTideDecoder),
 					url: getTideUrl
 				})
 			]));
@@ -11350,6 +11364,17 @@ var $elm_community$maybe_extra$Maybe$Extra$combine = A2(
 	$elm$core$List$foldr,
 	$elm$core$Maybe$map2($elm$core$List$cons),
 	$elm$core$Maybe$Just(_List_Nil));
+var $elm$core$List$filter = F2(
+	function (isGood, list) {
+		return A3(
+			$elm$core$List$foldr,
+			F2(
+				function (x, xs) {
+					return isGood(x) ? A2($elm$core$List$cons, x, xs) : xs;
+				}),
+			_List_Nil,
+			list);
+	});
 var $elm$core$List$sortBy = _List_sortBy;
 var $elm$core$Result$toMaybe = function (result) {
 	if (result.$ === 'Ok') {
@@ -11369,12 +11394,101 @@ var $author$project$Main$getDirectionsFromSwells = function (swells) {
 				function ($) {
 					return $.direction;
 				}),
-			A2(
-				$elm$core$List$sortBy,
-				function ($) {
-					return $.height;
-				},
-				swells)));
+			$elm$core$List$reverse(
+				A2(
+					$elm$core$List$sortBy,
+					function ($) {
+						return $.height;
+					},
+					A2(
+						$elm$core$List$filter,
+						function (x) {
+							return x.height > 0;
+						},
+						swells)))));
+};
+var $elm$core$List$head = function (list) {
+	if (list.b) {
+		var x = list.a;
+		var xs = list.b;
+		return $elm$core$Maybe$Just(x);
+	} else {
+		return $elm$core$Maybe$Nothing;
+	}
+};
+var $elm$core$Maybe$map = F2(
+	function (f, maybe) {
+		if (maybe.$ === 'Just') {
+			var value = maybe.a;
+			return $elm$core$Maybe$Just(
+				f(value));
+		} else {
+			return $elm$core$Maybe$Nothing;
+		}
+	});
+var $elm$core$List$maximum = function (list) {
+	if (list.b) {
+		var x = list.a;
+		var xs = list.b;
+		return $elm$core$Maybe$Just(
+			A3($elm$core$List$foldl, $elm$core$Basics$max, x, xs));
+	} else {
+		return $elm$core$Maybe$Nothing;
+	}
+};
+var $elm$core$Basics$min = F2(
+	function (x, y) {
+		return (_Utils_cmp(x, y) < 0) ? x : y;
+	});
+var $elm$core$List$minimum = function (list) {
+	if (list.b) {
+		var x = list.a;
+		var xs = list.b;
+		return $elm$core$Maybe$Just(
+			A3($elm$core$List$foldl, $elm$core$Basics$min, x, xs));
+	} else {
+		return $elm$core$Maybe$Nothing;
+	}
+};
+var $author$project$Tide$normalize = F3(
+	function (value, min, max) {
+		var _v0 = _Utils_Tuple3(value, min, max);
+		if (((_v0.a.$ === 'Just') && (_v0.b.$ === 'Just')) && (_v0.c.$ === 'Just')) {
+			var v = _v0.a.a;
+			var mn = _v0.b.a;
+			var mx = _v0.c.a;
+			return (v - mn) / (mx - mn);
+		} else {
+			return 0;
+		}
+	});
+var $author$project$Tide$tideFromTides = function (xs) {
+	var minHeight = $elm$core$List$minimum(
+		A2(
+			$elm$core$List$map,
+			function ($) {
+				return $.height;
+			},
+			xs));
+	var maxHeight = $elm$core$List$maximum(
+		A2(
+			$elm$core$List$map,
+			function ($) {
+				return $.height;
+			},
+			xs));
+	var value = A3(
+		$author$project$Tide$normalize,
+		A2(
+			$elm$core$Maybe$map,
+			function ($) {
+				return $.height;
+			},
+			$elm$core$List$head(
+				$elm$core$List$reverse(xs))),
+		minHeight,
+		maxHeight);
+	return (value < 0.33) ? $author$project$Tide$Low : ((value < 0.66) ? $author$project$Tide$Mid : $author$project$Tide$High);
 };
 var $author$project$Main$update = F2(
 	function (msg, model) {
@@ -11427,12 +11541,13 @@ var $author$project$Main$update = F2(
 							}
 						case 'GotTide':
 							if (msg.a.$ === 'Ok') {
-								var tide = msg.a.a;
+								var tides = msg.a.a;
 								return $author$project$Main$checkIfLoaded(
 									_Utils_update(
 										loadingData,
 										{
-											tide: $elm$core$Maybe$Just(tide)
+											tide: $elm$core$Maybe$Just(
+												$author$project$Tide$tideFromTides(tides))
 										}));
 							} else {
 								var errorMsg = msg.a.a;
@@ -11815,16 +11930,6 @@ var $mdgriffith$elm_ui$Internal$Model$formatBoxShadow = function (shadow) {
 					$mdgriffith$elm_ui$Internal$Model$formatColor(shadow.color))
 				])));
 };
-var $elm$core$Maybe$map = F2(
-	function (f, maybe) {
-		if (maybe.$ === 'Just') {
-			var value = maybe.a;
-			return $elm$core$Maybe$Just(
-				f(value));
-		} else {
-			return $elm$core$Maybe$Nothing;
-		}
-	});
 var $elm$core$Tuple$mapFirst = F2(
 	function (func, _v0) {
 		var x = _v0.a;
@@ -14057,10 +14162,6 @@ var $mdgriffith$elm_ui$Internal$Model$hasSmallCaps = function (typeface) {
 		return false;
 	}
 };
-var $elm$core$Basics$min = F2(
-	function (x, y) {
-		return (_Utils_cmp(x, y) < 0) ? x : y;
-	});
 var $mdgriffith$elm_ui$Internal$Model$renderProps = F3(
 	function (force, _v0, existing) {
 		var key = _v0.a;
@@ -14740,37 +14841,6 @@ var $mdgriffith$elm_ui$Internal$Model$adjust = F3(
 	function (size, height, vertical) {
 		return {height: height / size, size: size, vertical: vertical};
 	});
-var $elm$core$List$filter = F2(
-	function (isGood, list) {
-		return A3(
-			$elm$core$List$foldr,
-			F2(
-				function (x, xs) {
-					return isGood(x) ? A2($elm$core$List$cons, x, xs) : xs;
-				}),
-			_List_Nil,
-			list);
-	});
-var $elm$core$List$maximum = function (list) {
-	if (list.b) {
-		var x = list.a;
-		var xs = list.b;
-		return $elm$core$Maybe$Just(
-			A3($elm$core$List$foldl, $elm$core$Basics$max, x, xs));
-	} else {
-		return $elm$core$Maybe$Nothing;
-	}
-};
-var $elm$core$List$minimum = function (list) {
-	if (list.b) {
-		var x = list.a;
-		var xs = list.b;
-		return $elm$core$Maybe$Just(
-			A3($elm$core$List$foldl, $elm$core$Basics$min, x, xs));
-	} else {
-		return $elm$core$Maybe$Nothing;
-	}
-};
 var $mdgriffith$elm_ui$Internal$Model$convertAdjustment = function (adjustment) {
 	var lines = _List_fromArray(
 		[adjustment.capital, adjustment.baseline, adjustment.descender, adjustment.lowercase]);
@@ -17192,7 +17262,7 @@ var $author$project$Main$main = $elm$browser$Browser$element(
 		view: $author$project$Main$view
 	});
 _Platform_export({'Main':{'init':$author$project$Main$main(
-	$elm$json$Json$Decode$succeed(_Utils_Tuple0))({"versions":{"elm":"0.19.1"},"types":{"message":"Main.Msg","aliases":{"IdealConditions.IdealConditions":{"args":[],"type":"{ swellDirection : List.List Direction.Direction, windDirection : List.List Direction.Direction, surfHeight : ( Basics.Int, Basics.Int ), tide : Tide.Tide }"},"SurfHeight.SurfHeight":{"args":[],"type":"( Basics.Float, Basics.Float )"},"SurfSpot.SurfSpot":{"args":[],"type":"{ id : Basics.Int, name : String.String, idealConditions : IdealConditions.IdealConditions, score : Basics.Int }"},"Swell.Swell":{"args":[],"type":"{ height : Basics.Float, period : Basics.Int, direction : Basics.Float, directionMin : Basics.Float, optimalScore : Basics.Int }"}},"unions":{"Main.Msg":{"args":[],"tags":{"GotSurfSpots":["Result.Result Http.Error (List.List SurfSpot.SurfSpot)"],"GotWindDirection":["Result.Result Http.Error Direction.Direction"],"GotSwells":["Result.Result Http.Error (List.List Swell.Swell)"],"GotTide":["Result.Result Http.Error Tide.Tide"],"GotHeight":["Result.Result Http.Error SurfHeight.SurfHeight"]}},"Direction.Direction":{"args":[],"tags":{"N":[],"E":[],"S":[],"W":[],"NE":[],"SE":[],"SW":[],"NW":[],"NNE":[],"ENE":[],"ESE":[],"SSE":[],"SSW":[],"WSW":[],"WNW":[],"NNW":[]}},"Http.Error":{"args":[],"tags":{"BadUrl":["String.String"],"Timeout":[],"NetworkError":[],"BadStatus":["Basics.Int"],"BadBody":["String.String"]}},"Basics.Float":{"args":[],"tags":{"Float":[]}},"Basics.Int":{"args":[],"tags":{"Int":[]}},"List.List":{"args":["a"],"tags":{}},"Result.Result":{"args":["error","value"],"tags":{"Ok":["value"],"Err":["error"]}},"String.String":{"args":[],"tags":{"String":[]}},"Tide.Tide":{"args":[],"tags":{"Low":[],"Mid":[],"High":[],"Normal":[]}}}}})}});}(this));
+	$elm$json$Json$Decode$succeed(_Utils_Tuple0))({"versions":{"elm":"0.19.1"},"types":{"message":"Main.Msg","aliases":{"IdealConditions.IdealConditions":{"args":[],"type":"{ swellDirection : List.List Direction.Direction, windDirection : List.List Direction.Direction, surfHeight : ( Basics.Int, Basics.Int ), tide : Tide.Tide }"},"SurfHeight.SurfHeight":{"args":[],"type":"( Basics.Float, Basics.Float )"},"SurfSpot.SurfSpot":{"args":[],"type":"{ id : Basics.Int, name : String.String, idealConditions : IdealConditions.IdealConditions, score : Basics.Int }"},"Swell.Swell":{"args":[],"type":"{ height : Basics.Float, period : Basics.Int, direction : Basics.Float, directionMin : Basics.Float, optimalScore : Basics.Int }"},"Tide.TideDataPoint":{"args":[],"type":"{ timestamp : Basics.Int, type_ : String.String, height : Basics.Float }"}},"unions":{"Main.Msg":{"args":[],"tags":{"GotSurfSpots":["Result.Result Http.Error (List.List SurfSpot.SurfSpot)"],"GotWindDirection":["Result.Result Http.Error Direction.Direction"],"GotSwells":["Result.Result Http.Error (List.List Swell.Swell)"],"GotTide":["Result.Result Http.Error (List.List Tide.TideDataPoint)"],"GotHeight":["Result.Result Http.Error SurfHeight.SurfHeight"]}},"Direction.Direction":{"args":[],"tags":{"N":[],"E":[],"S":[],"W":[],"NE":[],"SE":[],"SW":[],"NW":[],"NNE":[],"ENE":[],"ESE":[],"SSE":[],"SSW":[],"WSW":[],"WNW":[],"NNW":[]}},"Http.Error":{"args":[],"tags":{"BadUrl":["String.String"],"Timeout":[],"NetworkError":[],"BadStatus":["Basics.Int"],"BadBody":["String.String"]}},"Basics.Float":{"args":[],"tags":{"Float":[]}},"Basics.Int":{"args":[],"tags":{"Int":[]}},"List.List":{"args":["a"],"tags":{}},"Result.Result":{"args":["error","value"],"tags":{"Ok":["value"],"Err":["error"]}},"String.String":{"args":[],"tags":{"String":[]}},"Tide.Tide":{"args":[],"tags":{"Low":[],"Mid":[],"High":[]}}}}})}});}(this));
 
   var app = Elm.Main.init({ node: document.getElementById("elm") });
 }
