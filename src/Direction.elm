@@ -29,7 +29,7 @@ stringToDirectionDecoder =
 
 degreeToDirectionDecoder : Decoder Direction
 degreeToDirectionDecoder =
-    JD.float |> JD.andThen (fromResultDirection << parseDegreeToDirection)
+    JD.float |> JD.map parseDegreeToDirection
 
 
 fromResultDirection : Result String a -> Decoder a
@@ -97,52 +97,52 @@ parseStringToDirection string =
             Err ("Invalid direction: " ++ string)
 
 
-parseDegreeToDirection : Float -> Result String Direction
+parseDegreeToDirection : Float -> Direction
 parseDegreeToDirection degree =
     if degree < 22.5 then
-        Ok N
+        N
 
     else if degree < 45.0 then
-        Ok NNE
+        NNE
 
     else if degree < 67.5 then
-        Ok NE
+        NE
 
     else if degree < 90 then
-        Ok ENE
+        ENE
 
     else if degree < 112.5 then
-        Ok E
+        E
 
     else if degree < 135.0 then
-        Ok ESE
+        ESE
 
     else if degree < 157.5 then
-        Ok SE
+        SE
 
     else if degree < 180.0 then
-        Ok SSE
+        SSE
 
     else if degree < 202.5 then
-        Ok S
+        S
 
     else if degree < 225.0 then
-        Ok SSW
+        SSW
 
     else if degree < 247.5 then
-        Ok SW
+        SW
 
     else if degree < 270.0 then
-        Ok WSW
+        WSW
 
     else if degree < 292.5 then
-        Ok W
+        W
 
     else if degree < 315.0 then
-        Ok WNW
+        WNW
 
     else if degree < 337.5 then
-        Ok NW
+        NW
 
     else
-        Ok NNW
+        NNW

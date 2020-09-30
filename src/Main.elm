@@ -1,4 +1,4 @@
-module Main exposing (..)
+module Main exposing (getNextHour, main)
 
 import Browser
 import CurrentConditions exposing (CurrentConditions)
@@ -9,15 +9,20 @@ import Element.Border as Border
 import Element.Font as Font
 import Element.Input as Input
 import Html exposing (Html)
-import Http
+import Http exposing (expectJson)
 import IdealConditions exposing (IdealConditions)
-import Json.Decode exposing (Decoder, int, list, string, succeed)
+import Json.Decode as JD exposing (Decoder, int, list, string, succeed)
 import Json.Decode.Pipeline exposing (optional, required)
 import Maybe.Extra exposing (combine)
+import RemoteData exposing (RemoteData(..), WebData, andMap)
+import RemoteData.Http
 import SurfHeight exposing (SurfHeight, heightDecoder)
 import SurfSpot exposing (SurfSpot, spotDecoder)
-import Swell exposing (Swell, swellsDecoder)
-import Tide exposing (Tide(..), TideDataPoint, listTideDecoder, tideFromTides)
+import Swell exposing (Swell, swellsDirectionsDecoder)
+import Task
+import Tide exposing (Tide(..), TideDataPoint, listTideDecoder, tideFromFloatDecoder, tideFromTides)
+import Time exposing (Month(..), Zone, posixToMillis)
+import Time.Extra exposing (Interval(..), ceiling)
 import Wind exposing (windDirectionDecoder)
 
 
@@ -25,33 +30,32 @@ import Wind exposing (windDirectionDecoder)
 -- MODEL
 
 
-type Model
-    = Loading
-        { surfSpots : Maybe (List SurfSpot)
-        , swellDirection : Maybe (List Direction)
-        , windDirection : Maybe Direction
-        , surfHeight : Maybe ( Float, Float )
-        , tide : Maybe Tide
-        }
-    | Success
-        { surfSpots : List SurfSpot
-        , swellDirection : List Direction
-        , windDirection : Direction
-        , surfHeight : ( Float, Float )
-        , tide : Tide
-        }
-    | Error String
+type alias Model =
+    { surfSpots : WebData (List SurfSpot)
+    , swellDirections : WebData (List Direction)
+    , windDirection : WebData Direction
+    , surfHeight : WebData ( Float, Float )
+    , tide : WebData Tide
+    , zone : Time.Zone
+    , time : Time.Posix
+    }
 
 
 initialModel : Model
 initialModel =
-    Loading
-        { surfSpots = Nothing
-        , swellDirection = Nothing
-        , windDirection = Nothing
-        , surfHeight = Nothing
-        , tide = Nothing
-        }
+    { surfSpots = Loading
+    , swellDirections = Loading
+    , windDirection = Loading
+    , surfHeight = Loading
+    , tide = Loading
+    , zone = Time.utc
+    , time = Time.millisToPosix 0
+    }
+
+
+windDecoder : Model -> Decoder Direction
+windDecoder model =
+    windDirectionDecoder (getNextHour model.zone model.time)
 
 
 initialCmd : Cmd Msg
@@ -61,28 +65,106 @@ initialCmd =
             "http://localhost:3000/spots"
 
         getWindUrl =
-            "https://services.surfline.com/kbyg/spots/forecasts/wind?spotId=5842041f4e65fad6a770883b&days=1&intervalHours=6"
+            "https://services.surfline.com/kbyg/spots/forecasts/wind?spotId=5842041f4e65fad6a770883b&days=1"
 
         getWaveUrl =
-            "https://services.surfline.com/kbyg/spots/forecasts/wave?spotId=5842041f4e65fad6a770883b&days=1&intervalHours=6"
+            "https://services.surfline.com/kbyg/spots/forecasts/wave?spotId=5842041f4e65fad6a770883b&days=1"
 
         getTideUrl =
             "https://services.surfline.com/kbyg/spots/forecasts/tides?spotId=5842041f4e65fad6a770883b&days=1"
     in
     Cmd.batch
-        [ Http.get { url = getSpotsFromDBUrl, expect = Http.expectJson GotSurfSpots (list spotDecoder) }
-        , Http.get { url = getWindUrl, expect = Http.expectJson GotWindDirection windDirectionDecoder }
-        , Http.get { url = getWaveUrl, expect = Http.expectJson GotSwells swellsDecoder }
-        , Http.get { url = getWaveUrl, expect = Http.expectJson GotHeight heightDecoder }
-
-        -- totlally not loving to have to deal with the list of tide values here
-        -- would love a decoder that finishes the job
-        , Http.get { url = getTideUrl, expect = Http.expectJson GotTide listTideDecoder }
+        [ Task.perform AdjustTimeZone Time.here
+        , Task.perform GetTime Time.now
+        , getWindDirections
+        , Http.get
+            { url = getWaveUrl
+            , expect = expectJson (RemoteData.fromResult >> GotSwells) swellsDirectionsDecoder
+            }
+        , Http.get
+            { url = getWaveUrl
+            , expect = expectJson (RemoteData.fromResult >> GotHeight) heightDecoder
+            }
+        , Http.get
+            { url = getTideUrl
+            , expect = expectJson (RemoteData.fromResult >> GotTide) tideFromFloatDecoder
+            }
+        , Http.get
+            { url = getSpotsFromDBUrl
+            , expect = expectJson (RemoteData.fromResult >> GotSurfSpots) (list spotDecoder)
+            }
         ]
 
 
-type FiveMaybes a b c d e
-    = FiveMaybes (Maybe a) (Maybe b) (Maybe c) (Maybe d) (Maybe e)
+getWindDirection : Model -> Cmd Msg
+getWindDirection model =
+    Http.get
+        { url = "https://services.surfline.com/kbyg/spots/forecasts/wind?spotId=5842041f4e65fad6a770883b&days=1"
+        , expect = expectJson (RemoteData.fromResult >> GotWindDirection) <| windDirectionDecoder <| getNextHour model.zone model.time
+        }
+
+
+type FiveData a b c d e
+    = FiveData a b c d e
+
+
+
+-- UPDATE
+
+
+type Msg
+    = GotSurfSpots (WebData (List SurfSpot))
+    | GotWindDirection (WebData Direction)
+    | GotSwells (WebData (List Direction))
+    | GotTide (WebData Tide)
+    | GotHeight (WebData ( Float, Float ))
+    | AdjustTimeZone Time.Zone
+    | GetTime Time.Posix
+
+
+update : Msg -> Model -> ( Model, Cmd Msg )
+update msg model =
+    let
+        updatedModel =
+            case msg of
+                GetTime time ->
+                    { model | time = time }
+
+                AdjustTimeZone tz ->
+                    { model | zone = tz }
+
+                GotSurfSpots surfSpots ->
+                    { model | surfSpots = surfSpots }
+
+                GotWindDirection windDirection ->
+                    { model | windDirection = windDirection }
+
+                GotSwells swells ->
+                    { model | swellDirections = swells }
+
+                GotTide tide ->
+                    { model | tide = tide }
+
+                GotHeight surfHeight ->
+                    { model | surfHeight = surfHeight }
+    in
+    ( updatedModel, Cmd.none )
+
+
+getNextHour : Time.Zone -> Time.Posix -> Int
+getNextHour z t =
+    Time.Extra.ceiling Hour z t |> posixToMillis |> (//) 1000
+
+
+checkIfLoaded :
+    WebData (List SurfSpot)
+    -> WebData (List Direction)
+    -> WebData Direction
+    -> WebData ( Float, Float )
+    -> WebData Tide
+    -> WebData (FiveData (List SurfSpot) (List Direction) Direction ( Float, Float ) Tide)
+checkIfLoaded a b c d e =
+    RemoteData.map (\f g h i j -> FiveData f g h i j) a |> andMap b |> andMap c |> andMap d |> andMap e
 
 
 errorToString : Http.Error -> String
@@ -105,134 +187,24 @@ errorToString err =
 
 
 
--- UPDATE
-
-
-type Msg
-    = GotSurfSpots (Result Http.Error (List SurfSpot))
-    | GotWindDirection (Result Http.Error Direction)
-    | GotSwells (Result Http.Error (List Swell))
-    | GotTide (Result Http.Error (List TideDataPoint))
-    | GotHeight (Result Http.Error SurfHeight)
-
-
-update : Msg -> Model -> ( Model, Cmd Msg )
-update msg model =
-    let
-        updatedModel =
-            case model of
-                Loading loadingData ->
-                    case msg of
-                        GotSurfSpots (Ok surfSpots) ->
-                            checkIfLoaded { loadingData | surfSpots = Just surfSpots }
-
-                        GotWindDirection (Ok windDirection) ->
-                            checkIfLoaded { loadingData | windDirection = Just windDirection }
-
-                        GotSwells (Ok swells) ->
-                            checkIfLoaded { loadingData | swellDirection = getDirectionsFromSwells swells }
-
-                        GotTide (Ok tides) ->
-                            checkIfLoaded { loadingData | tide = Just (tideFromTides tides) }
-
-                        GotHeight (Ok height) ->
-                            checkIfLoaded { loadingData | surfHeight = Just height }
-
-                        GotSurfSpots (Err errorMsg) ->
-                            Error ("Error fetching surf spots:" ++ errorToString errorMsg)
-
-                        GotWindDirection (Err errorMsg) ->
-                            Error ("Error fetching wind info:" ++ errorToString errorMsg)
-
-                        GotSwells (Err errorMsg) ->
-                            Error ("Error fetching swells info:" ++ errorToString errorMsg)
-
-                        GotTide (Err errorMsg) ->
-                            Error ("Error fetching tide info:" ++ errorToString errorMsg)
-
-                        GotHeight (Err errorMsg) ->
-                            Error ("Error fetching surf height info:" ++ errorToString errorMsg)
-
-                Success loadedModel ->
-                    case msg of
-                        GotSurfSpots _ ->
-                            model
-
-                        GotWindDirection _ ->
-                            model
-
-                        GotSwells _ ->
-                            model
-
-                        GotTide _ ->
-                            model
-
-                        GotHeight _ ->
-                            model
-
-                Error _ ->
-                    model
-    in
-    ( updatedModel, Cmd.none )
-
-
-
---  extract a sorted array of direction from list of swells data
-
-
-getDirectionsFromSwells : List Swell -> Maybe (List Direction)
-getDirectionsFromSwells swells =
-    combine <|
-        List.map (Result.toMaybe << parseDegreeToDirection << .direction) <|
-            List.reverse <|
-                List.sortBy .height <|
-                    List.filter (\x -> x.height > 0) <|
-                        swells
-
-
-
--- Check if all data is loaded, if so change model to Sucess
-
-
-checkIfLoaded :
-    { surfSpots : Maybe (List SurfSpot)
-    , swellDirection : Maybe (List Direction)
-    , windDirection : Maybe Direction
-    , surfHeight : Maybe ( Float, Float )
-    , tide : Maybe Tide
-    }
-    -> Model
-checkIfLoaded data =
-    case FiveMaybes data.surfSpots data.swellDirection data.windDirection data.surfHeight data.tide of
-        FiveMaybes (Just surfSpots) (Just swellDirection) (Just windDirection) (Just surfHeight) (Just tide) ->
-            Success
-                { surfSpots = surfSpots
-                , swellDirection = swellDirection
-                , windDirection = windDirection
-                , surfHeight = surfHeight
-                , tide = tide
-                }
-
-        _ ->
-            Loading data
-
-
-
 -- VIEW
 
 
 view : Model -> Html Msg
 view model =
     layout [ padding 80 ] <|
-        case model of
-            Error message ->
-                el [] (text ("Problem!: " ++ message))
+        case checkIfLoaded model.surfSpots model.swellDirections model.windDirection model.surfHeight model.tide of
+            Failure message ->
+                el [] (text ("Error: " ++ errorToString message))
 
-            Loading _ ->
+            Loading ->
                 el [] (text "Loading...")
 
             Success loadedData ->
                 el [] (text "Success")
+
+            NotAsked ->
+                el [] (text "Not asked...")
 
 
 

@@ -1,4 +1,4 @@
-module Tide exposing (Tide(..), TideDataPoint, listTideDecoder, tideDecoder, tideFromTides)
+module Tide exposing (Tide(..), TideDataPoint, listTideDecoder, tideDecoder, tideFromFloatDecoder, tideFromTides)
 
 import Json.Decode as JD exposing (Decoder, at, field, float, index, int, list, string, succeed)
 import Json.Decode.Pipeline exposing (required)
@@ -34,6 +34,11 @@ tideDecoder : Decoder Tide
 tideDecoder =
     -- this is to parse the string coming from the DB
     JD.string |> JD.andThen (fromResult << parseTide)
+
+
+tideFromFloatDecoder : Decoder Tide
+tideFromFloatDecoder =
+    JD.map tideFromTides listTideDecoder
 
 
 normalize : Maybe Float -> Maybe Float -> Maybe Float -> Float
