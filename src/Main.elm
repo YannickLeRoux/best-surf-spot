@@ -60,6 +60,14 @@ windDecoder model =
 
 initialCmd : Cmd Msg
 initialCmd =
+    Cmd.batch
+        [ Task.perform AdjustTimeZone Time.here
+        , Task.perform GetTime Time.now
+        ]
+
+
+makeRequests : Time.Zone -> Time.Posix -> Cmd Msg
+makeRequests zone time =
     let
         getSpotsFromDBUrl =
             "http://localhost:3000/spots"
@@ -74,9 +82,7 @@ initialCmd =
             "https://services.surfline.com/kbyg/spots/forecasts/tides?spotId=5842041f4e65fad6a770883b&days=1"
     in
     Cmd.batch
-        [ Task.perform AdjustTimeZone Time.here
-        , Task.perform GetTime Time.now
-        , getWindDirections
+        [ getWindDirection zone time
         , Http.get
             { url = getWaveUrl
             , expect = expectJson (RemoteData.fromResult >> GotSwells) swellsDirectionsDecoder
@@ -96,11 +102,11 @@ initialCmd =
         ]
 
 
-getWindDirection : Model -> Cmd Msg
-getWindDirection model =
+getWindDirection : Time.Zone -> Time.Posix -> Cmd Msg
+getWindDirection zone time =
     Http.get
         { url = "https://services.surfline.com/kbyg/spots/forecasts/wind?spotId=5842041f4e65fad6a770883b&days=1"
-        , expect = expectJson (RemoteData.fromResult >> GotWindDirection) <| windDirectionDecoder <| getNextHour model.zone model.time
+        , expect = expectJson (RemoteData.fromResult >> GotWindDirection) <| windDirectionDecoder <| Debug.log "get next hour" (getNextHour zone time)
         }
 
 
@@ -124,36 +130,33 @@ type Msg
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
-    let
-        updatedModel =
-            case msg of
-                GetTime time ->
-                    { model | time = time }
+    case msg of
+        GetTime time ->
+            ( { model | time = time }, makeRequests Time.utc time )
 
-                AdjustTimeZone tz ->
-                    { model | zone = tz }
+        -- change to california
+        AdjustTimeZone tz ->
+            ( { model | zone = tz }, Cmd.none )
 
-                GotSurfSpots surfSpots ->
-                    { model | surfSpots = surfSpots }
+        GotSurfSpots surfSpots ->
+            ( { model | surfSpots = surfSpots }, Cmd.none )
 
-                GotWindDirection windDirection ->
-                    { model | windDirection = windDirection }
+        GotWindDirection windDirection ->
+            ( { model | windDirection = windDirection }, Cmd.none )
 
-                GotSwells swells ->
-                    { model | swellDirections = swells }
+        GotSwells swells ->
+            ( { model | swellDirections = swells }, Cmd.none )
 
-                GotTide tide ->
-                    { model | tide = tide }
+        GotTide tide ->
+            ( { model | tide = tide }, Cmd.none )
 
-                GotHeight surfHeight ->
-                    { model | surfHeight = surfHeight }
-    in
-    ( updatedModel, Cmd.none )
+        GotHeight surfHeight ->
+            ( { model | surfHeight = surfHeight }, Cmd.none )
 
 
 getNextHour : Time.Zone -> Time.Posix -> Int
 getNextHour z t =
-    Time.Extra.ceiling Hour z t |> posixToMillis |> (//) 1000
+    Time.Extra.ceiling Hour z t |> posixToMillis |> (\x -> x // 1000)
 
 
 checkIfLoaded :

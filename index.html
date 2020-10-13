@@ -4955,6 +4955,52 @@ function _Browser_load(url)
 
 
 
+function _Time_now(millisToPosix)
+{
+	return _Scheduler_binding(function(callback)
+	{
+		callback(_Scheduler_succeed(millisToPosix(Date.now())));
+	});
+}
+
+var _Time_setInterval = F2(function(interval, task)
+{
+	return _Scheduler_binding(function(callback)
+	{
+		var id = setInterval(function() { _Scheduler_rawSpawn(task); }, interval);
+		return function() { clearInterval(id); };
+	});
+});
+
+function _Time_here()
+{
+	return _Scheduler_binding(function(callback)
+	{
+		callback(_Scheduler_succeed(
+			A2($elm$time$Time$customZone, -(new Date().getTimezoneOffset()), _List_Nil)
+		));
+	});
+}
+
+
+function _Time_getZoneName()
+{
+	return _Scheduler_binding(function(callback)
+	{
+		try
+		{
+			var name = $elm$time$Time$Name(Intl.DateTimeFormat().resolvedOptions().timeZone);
+		}
+		catch (e)
+		{
+			var name = $elm$time$Time$Offset(new Date().getTimezoneOffset());
+		}
+		callback(_Scheduler_succeed(name));
+	});
+}
+
+
+
 // SEND REQUEST
 
 var _Http_toTask = F3(function(router, toTask, request)
@@ -5127,53 +5173,7 @@ function _Http_track(router, xhr, tracker)
 			size: event.lengthComputable ? $elm$core$Maybe$Just(event.total) : $elm$core$Maybe$Nothing
 		}))));
 	});
-}
-
-
-function _Time_now(millisToPosix)
-{
-	return _Scheduler_binding(function(callback)
-	{
-		callback(_Scheduler_succeed(millisToPosix(Date.now())));
-	});
-}
-
-var _Time_setInterval = F2(function(interval, task)
-{
-	return _Scheduler_binding(function(callback)
-	{
-		var id = setInterval(function() { _Scheduler_rawSpawn(task); }, interval);
-		return function() { clearInterval(id); };
-	});
-});
-
-function _Time_here()
-{
-	return _Scheduler_binding(function(callback)
-	{
-		callback(_Scheduler_succeed(
-			A2($elm$time$Time$customZone, -(new Date().getTimezoneOffset()), _List_Nil)
-		));
-	});
-}
-
-
-function _Time_getZoneName()
-{
-	return _Scheduler_binding(function(callback)
-	{
-		try
-		{
-			var name = $elm$time$Time$Name(Intl.DateTimeFormat().resolvedOptions().timeZone);
-		}
-		catch (e)
-		{
-			var name = $elm$time$Time$Offset(new Date().getTimezoneOffset());
-		}
-		callback(_Scheduler_succeed(name));
-	});
-}
-var $elm$core$Basics$EQ = {$: 'EQ'};
+}var $elm$core$Basics$EQ = {$: 'EQ'};
 var $elm$core$Basics$LT = {$: 'LT'};
 var $elm$core$List$cons = _List_cons;
 var $elm$core$Elm$JsArray$foldr = _JsArray_foldr;
@@ -10777,6 +10777,42 @@ var $author$project$Main$AdjustTimeZone = function (a) {
 var $author$project$Main$GetTime = function (a) {
 	return {$: 'GetTime', a: a};
 };
+var $elm$time$Time$Name = function (a) {
+	return {$: 'Name', a: a};
+};
+var $elm$time$Time$Offset = function (a) {
+	return {$: 'Offset', a: a};
+};
+var $elm$time$Time$Zone = F2(
+	function (a, b) {
+		return {$: 'Zone', a: a, b: b};
+	});
+var $elm$time$Time$customZone = $elm$time$Time$Zone;
+var $elm$time$Time$here = _Time_here(_Utils_Tuple0);
+var $elm$time$Time$Posix = function (a) {
+	return {$: 'Posix', a: a};
+};
+var $elm$time$Time$millisToPosix = $elm$time$Time$Posix;
+var $elm$time$Time$now = _Time_now($elm$time$Time$millisToPosix);
+var $author$project$Main$initialCmd = $elm$core$Platform$Cmd$batch(
+	_List_fromArray(
+		[
+			A2($elm$core$Task$perform, $author$project$Main$AdjustTimeZone, $elm$time$Time$here),
+			A2($elm$core$Task$perform, $author$project$Main$GetTime, $elm$time$Time$now)
+		]));
+var $krisajenkins$remotedata$RemoteData$Loading = {$: 'Loading'};
+var $elm$time$Time$utc = A2($elm$time$Time$Zone, 0, _List_Nil);
+var $author$project$Main$initialModel = {
+	surfHeight: $krisajenkins$remotedata$RemoteData$Loading,
+	surfSpots: $krisajenkins$remotedata$RemoteData$Loading,
+	swellDirections: $krisajenkins$remotedata$RemoteData$Loading,
+	tide: $krisajenkins$remotedata$RemoteData$Loading,
+	time: $elm$time$Time$millisToPosix(0),
+	windDirection: $krisajenkins$remotedata$RemoteData$Loading,
+	zone: $elm$time$Time$utc
+};
+var $elm$core$Platform$Sub$batch = _Platform_batch;
+var $elm$core$Platform$Sub$none = $elm$core$Platform$Sub$batch(_List_Nil);
 var $author$project$Main$GotHeight = function (a) {
 	return {$: 'GotHeight', a: a};
 };
@@ -10788,9 +10824,6 @@ var $author$project$Main$GotSwells = function (a) {
 };
 var $author$project$Main$GotTide = function (a) {
 	return {$: 'GotTide', a: a};
-};
-var $author$project$Main$GotWindDirection = function (a) {
-	return {$: 'GotWindDirection', a: a};
 };
 var $elm$http$Http$BadStatus_ = F2(
 	function (a, b) {
@@ -11055,13 +11088,897 @@ var $elm$http$Http$get = function (r) {
 	return $elm$http$Http$request(
 		{body: $elm$http$Http$emptyBody, expect: r.expect, headers: _List_Nil, method: 'GET', timeout: $elm$core$Maybe$Nothing, tracker: $elm$core$Maybe$Nothing, url: r.url});
 };
+var $author$project$Main$GotWindDirection = function (a) {
+	return {$: 'GotWindDirection', a: a};
+};
+var $justinmimbs$time_extra$Time$Extra$Hour = {$: 'Hour'};
+var $justinmimbs$time_extra$Time$Extra$Day = {$: 'Day'};
+var $justinmimbs$date$Date$Days = {$: 'Days'};
+var $justinmimbs$time_extra$Time$Extra$Millisecond = {$: 'Millisecond'};
+var $justinmimbs$time_extra$Time$Extra$Month = {$: 'Month'};
+var $justinmimbs$date$Date$Months = {$: 'Months'};
+var $justinmimbs$date$Date$RD = function (a) {
+	return {$: 'RD', a: a};
+};
+var $elm$core$Basics$modBy = _Basics_modBy;
+var $justinmimbs$date$Date$isLeapYear = function (y) {
+	return ((!A2($elm$core$Basics$modBy, 4, y)) && (!(!A2($elm$core$Basics$modBy, 100, y)))) || (!A2($elm$core$Basics$modBy, 400, y));
+};
+var $justinmimbs$date$Date$daysBeforeMonth = F2(
+	function (y, m) {
+		var leapDays = $justinmimbs$date$Date$isLeapYear(y) ? 1 : 0;
+		switch (m.$) {
+			case 'Jan':
+				return 0;
+			case 'Feb':
+				return 31;
+			case 'Mar':
+				return 59 + leapDays;
+			case 'Apr':
+				return 90 + leapDays;
+			case 'May':
+				return 120 + leapDays;
+			case 'Jun':
+				return 151 + leapDays;
+			case 'Jul':
+				return 181 + leapDays;
+			case 'Aug':
+				return 212 + leapDays;
+			case 'Sep':
+				return 243 + leapDays;
+			case 'Oct':
+				return 273 + leapDays;
+			case 'Nov':
+				return 304 + leapDays;
+			default:
+				return 334 + leapDays;
+		}
+	});
+var $justinmimbs$date$Date$floorDiv = F2(
+	function (a, b) {
+		return $elm$core$Basics$floor(a / b);
+	});
+var $justinmimbs$date$Date$daysBeforeYear = function (y1) {
+	var y = y1 - 1;
+	var leapYears = (A2($justinmimbs$date$Date$floorDiv, y, 4) - A2($justinmimbs$date$Date$floorDiv, y, 100)) + A2($justinmimbs$date$Date$floorDiv, y, 400);
+	return (365 * y) + leapYears;
+};
+var $justinmimbs$date$Date$daysInMonth = F2(
+	function (y, m) {
+		switch (m.$) {
+			case 'Jan':
+				return 31;
+			case 'Feb':
+				return $justinmimbs$date$Date$isLeapYear(y) ? 29 : 28;
+			case 'Mar':
+				return 31;
+			case 'Apr':
+				return 30;
+			case 'May':
+				return 31;
+			case 'Jun':
+				return 30;
+			case 'Jul':
+				return 31;
+			case 'Aug':
+				return 31;
+			case 'Sep':
+				return 30;
+			case 'Oct':
+				return 31;
+			case 'Nov':
+				return 30;
+			default:
+				return 31;
+		}
+	});
+var $elm$core$Basics$min = F2(
+	function (x, y) {
+		return (_Utils_cmp(x, y) < 0) ? x : y;
+	});
+var $justinmimbs$date$Date$monthToNumber = function (m) {
+	switch (m.$) {
+		case 'Jan':
+			return 1;
+		case 'Feb':
+			return 2;
+		case 'Mar':
+			return 3;
+		case 'Apr':
+			return 4;
+		case 'May':
+			return 5;
+		case 'Jun':
+			return 6;
+		case 'Jul':
+			return 7;
+		case 'Aug':
+			return 8;
+		case 'Sep':
+			return 9;
+		case 'Oct':
+			return 10;
+		case 'Nov':
+			return 11;
+		default:
+			return 12;
+	}
+};
+var $elm$time$Time$Apr = {$: 'Apr'};
+var $elm$time$Time$Aug = {$: 'Aug'};
+var $elm$time$Time$Dec = {$: 'Dec'};
+var $elm$time$Time$Feb = {$: 'Feb'};
+var $elm$time$Time$Jan = {$: 'Jan'};
+var $elm$time$Time$Jul = {$: 'Jul'};
+var $elm$time$Time$Jun = {$: 'Jun'};
+var $elm$time$Time$Mar = {$: 'Mar'};
+var $elm$time$Time$May = {$: 'May'};
+var $elm$time$Time$Nov = {$: 'Nov'};
+var $elm$time$Time$Oct = {$: 'Oct'};
+var $elm$time$Time$Sep = {$: 'Sep'};
+var $justinmimbs$date$Date$numberToMonth = function (mn) {
+	var _v0 = A2($elm$core$Basics$max, 1, mn);
+	switch (_v0) {
+		case 1:
+			return $elm$time$Time$Jan;
+		case 2:
+			return $elm$time$Time$Feb;
+		case 3:
+			return $elm$time$Time$Mar;
+		case 4:
+			return $elm$time$Time$Apr;
+		case 5:
+			return $elm$time$Time$May;
+		case 6:
+			return $elm$time$Time$Jun;
+		case 7:
+			return $elm$time$Time$Jul;
+		case 8:
+			return $elm$time$Time$Aug;
+		case 9:
+			return $elm$time$Time$Sep;
+		case 10:
+			return $elm$time$Time$Oct;
+		case 11:
+			return $elm$time$Time$Nov;
+		default:
+			return $elm$time$Time$Dec;
+	}
+};
+var $justinmimbs$date$Date$toCalendarDateHelp = F3(
+	function (y, m, d) {
+		toCalendarDateHelp:
+		while (true) {
+			var monthDays = A2($justinmimbs$date$Date$daysInMonth, y, m);
+			var mn = $justinmimbs$date$Date$monthToNumber(m);
+			if ((mn < 12) && (_Utils_cmp(d, monthDays) > 0)) {
+				var $temp$y = y,
+					$temp$m = $justinmimbs$date$Date$numberToMonth(mn + 1),
+					$temp$d = d - monthDays;
+				y = $temp$y;
+				m = $temp$m;
+				d = $temp$d;
+				continue toCalendarDateHelp;
+			} else {
+				return {day: d, month: m, year: y};
+			}
+		}
+	});
+var $justinmimbs$date$Date$divWithRemainder = F2(
+	function (a, b) {
+		return _Utils_Tuple2(
+			A2($justinmimbs$date$Date$floorDiv, a, b),
+			A2($elm$core$Basics$modBy, b, a));
+	});
+var $justinmimbs$date$Date$year = function (_v0) {
+	var rd = _v0.a;
+	var _v1 = A2($justinmimbs$date$Date$divWithRemainder, rd, 146097);
+	var n400 = _v1.a;
+	var r400 = _v1.b;
+	var _v2 = A2($justinmimbs$date$Date$divWithRemainder, r400, 36524);
+	var n100 = _v2.a;
+	var r100 = _v2.b;
+	var _v3 = A2($justinmimbs$date$Date$divWithRemainder, r100, 1461);
+	var n4 = _v3.a;
+	var r4 = _v3.b;
+	var _v4 = A2($justinmimbs$date$Date$divWithRemainder, r4, 365);
+	var n1 = _v4.a;
+	var r1 = _v4.b;
+	var n = (!r1) ? 0 : 1;
+	return ((((n400 * 400) + (n100 * 100)) + (n4 * 4)) + n1) + n;
+};
+var $justinmimbs$date$Date$toOrdinalDate = function (_v0) {
+	var rd = _v0.a;
+	var y = $justinmimbs$date$Date$year(
+		$justinmimbs$date$Date$RD(rd));
+	return {
+		ordinalDay: rd - $justinmimbs$date$Date$daysBeforeYear(y),
+		year: y
+	};
+};
+var $justinmimbs$date$Date$toCalendarDate = function (_v0) {
+	var rd = _v0.a;
+	var date = $justinmimbs$date$Date$toOrdinalDate(
+		$justinmimbs$date$Date$RD(rd));
+	return A3($justinmimbs$date$Date$toCalendarDateHelp, date.year, $elm$time$Time$Jan, date.ordinalDay);
+};
+var $justinmimbs$date$Date$add = F3(
+	function (unit, n, _v0) {
+		var rd = _v0.a;
+		switch (unit.$) {
+			case 'Years':
+				return A3(
+					$justinmimbs$date$Date$add,
+					$justinmimbs$date$Date$Months,
+					12 * n,
+					$justinmimbs$date$Date$RD(rd));
+			case 'Months':
+				var date = $justinmimbs$date$Date$toCalendarDate(
+					$justinmimbs$date$Date$RD(rd));
+				var wholeMonths = ((12 * (date.year - 1)) + ($justinmimbs$date$Date$monthToNumber(date.month) - 1)) + n;
+				var m = $justinmimbs$date$Date$numberToMonth(
+					A2($elm$core$Basics$modBy, 12, wholeMonths) + 1);
+				var y = A2($justinmimbs$date$Date$floorDiv, wholeMonths, 12) + 1;
+				return $justinmimbs$date$Date$RD(
+					($justinmimbs$date$Date$daysBeforeYear(y) + A2($justinmimbs$date$Date$daysBeforeMonth, y, m)) + A2(
+						$elm$core$Basics$min,
+						date.day,
+						A2($justinmimbs$date$Date$daysInMonth, y, m)));
+			case 'Weeks':
+				return $justinmimbs$date$Date$RD(rd + (7 * n));
+			default:
+				return $justinmimbs$date$Date$RD(rd + n);
+		}
+	});
+var $elm$core$Basics$clamp = F3(
+	function (low, high, number) {
+		return (_Utils_cmp(number, low) < 0) ? low : ((_Utils_cmp(number, high) > 0) ? high : number);
+	});
+var $justinmimbs$date$Date$fromCalendarDate = F3(
+	function (y, m, d) {
+		return $justinmimbs$date$Date$RD(
+			($justinmimbs$date$Date$daysBeforeYear(y) + A2($justinmimbs$date$Date$daysBeforeMonth, y, m)) + A3(
+				$elm$core$Basics$clamp,
+				1,
+				A2($justinmimbs$date$Date$daysInMonth, y, m),
+				d));
+	});
+var $elm$time$Time$flooredDiv = F2(
+	function (numerator, denominator) {
+		return $elm$core$Basics$floor(numerator / denominator);
+	});
+var $elm$time$Time$posixToMillis = function (_v0) {
+	var millis = _v0.a;
+	return millis;
+};
+var $elm$time$Time$toAdjustedMinutesHelp = F3(
+	function (defaultOffset, posixMinutes, eras) {
+		toAdjustedMinutesHelp:
+		while (true) {
+			if (!eras.b) {
+				return posixMinutes + defaultOffset;
+			} else {
+				var era = eras.a;
+				var olderEras = eras.b;
+				if (_Utils_cmp(era.start, posixMinutes) < 0) {
+					return posixMinutes + era.offset;
+				} else {
+					var $temp$defaultOffset = defaultOffset,
+						$temp$posixMinutes = posixMinutes,
+						$temp$eras = olderEras;
+					defaultOffset = $temp$defaultOffset;
+					posixMinutes = $temp$posixMinutes;
+					eras = $temp$eras;
+					continue toAdjustedMinutesHelp;
+				}
+			}
+		}
+	});
+var $elm$time$Time$toAdjustedMinutes = F2(
+	function (_v0, time) {
+		var defaultOffset = _v0.a;
+		var eras = _v0.b;
+		return A3(
+			$elm$time$Time$toAdjustedMinutesHelp,
+			defaultOffset,
+			A2(
+				$elm$time$Time$flooredDiv,
+				$elm$time$Time$posixToMillis(time),
+				60000),
+			eras);
+	});
+var $elm$time$Time$toCivil = function (minutes) {
+	var rawDay = A2($elm$time$Time$flooredDiv, minutes, 60 * 24) + 719468;
+	var era = (((rawDay >= 0) ? rawDay : (rawDay - 146096)) / 146097) | 0;
+	var dayOfEra = rawDay - (era * 146097);
+	var yearOfEra = ((((dayOfEra - ((dayOfEra / 1460) | 0)) + ((dayOfEra / 36524) | 0)) - ((dayOfEra / 146096) | 0)) / 365) | 0;
+	var dayOfYear = dayOfEra - (((365 * yearOfEra) + ((yearOfEra / 4) | 0)) - ((yearOfEra / 100) | 0));
+	var mp = (((5 * dayOfYear) + 2) / 153) | 0;
+	var month = mp + ((mp < 10) ? 3 : (-9));
+	var year = yearOfEra + (era * 400);
+	return {
+		day: (dayOfYear - ((((153 * mp) + 2) / 5) | 0)) + 1,
+		month: month,
+		year: year + ((month <= 2) ? 1 : 0)
+	};
+};
+var $elm$time$Time$toDay = F2(
+	function (zone, time) {
+		return $elm$time$Time$toCivil(
+			A2($elm$time$Time$toAdjustedMinutes, zone, time)).day;
+	});
+var $elm$time$Time$toMonth = F2(
+	function (zone, time) {
+		var _v0 = $elm$time$Time$toCivil(
+			A2($elm$time$Time$toAdjustedMinutes, zone, time)).month;
+		switch (_v0) {
+			case 1:
+				return $elm$time$Time$Jan;
+			case 2:
+				return $elm$time$Time$Feb;
+			case 3:
+				return $elm$time$Time$Mar;
+			case 4:
+				return $elm$time$Time$Apr;
+			case 5:
+				return $elm$time$Time$May;
+			case 6:
+				return $elm$time$Time$Jun;
+			case 7:
+				return $elm$time$Time$Jul;
+			case 8:
+				return $elm$time$Time$Aug;
+			case 9:
+				return $elm$time$Time$Sep;
+			case 10:
+				return $elm$time$Time$Oct;
+			case 11:
+				return $elm$time$Time$Nov;
+			default:
+				return $elm$time$Time$Dec;
+		}
+	});
+var $elm$time$Time$toYear = F2(
+	function (zone, time) {
+		return $elm$time$Time$toCivil(
+			A2($elm$time$Time$toAdjustedMinutes, zone, time)).year;
+	});
+var $justinmimbs$date$Date$fromPosix = F2(
+	function (zone, posix) {
+		return A3(
+			$justinmimbs$date$Date$fromCalendarDate,
+			A2($elm$time$Time$toYear, zone, posix),
+			A2($elm$time$Time$toMonth, zone, posix),
+			A2($elm$time$Time$toDay, zone, posix));
+	});
+var $justinmimbs$date$Date$toRataDie = function (_v0) {
+	var rd = _v0.a;
+	return rd;
+};
+var $justinmimbs$time_extra$Time$Extra$dateToMillis = function (date) {
+	var daysSinceEpoch = $justinmimbs$date$Date$toRataDie(date) - 719163;
+	return daysSinceEpoch * 86400000;
+};
+var $justinmimbs$time_extra$Time$Extra$timeFromClock = F4(
+	function (hour, minute, second, millisecond) {
+		return (((hour * 3600000) + (minute * 60000)) + (second * 1000)) + millisecond;
+	});
+var $elm$time$Time$toHour = F2(
+	function (zone, time) {
+		return A2(
+			$elm$core$Basics$modBy,
+			24,
+			A2(
+				$elm$time$Time$flooredDiv,
+				A2($elm$time$Time$toAdjustedMinutes, zone, time),
+				60));
+	});
+var $elm$time$Time$toMillis = F2(
+	function (_v0, time) {
+		return A2(
+			$elm$core$Basics$modBy,
+			1000,
+			$elm$time$Time$posixToMillis(time));
+	});
+var $elm$time$Time$toMinute = F2(
+	function (zone, time) {
+		return A2(
+			$elm$core$Basics$modBy,
+			60,
+			A2($elm$time$Time$toAdjustedMinutes, zone, time));
+	});
+var $elm$time$Time$toSecond = F2(
+	function (_v0, time) {
+		return A2(
+			$elm$core$Basics$modBy,
+			60,
+			A2(
+				$elm$time$Time$flooredDiv,
+				$elm$time$Time$posixToMillis(time),
+				1000));
+	});
+var $justinmimbs$time_extra$Time$Extra$timeFromPosix = F2(
+	function (zone, posix) {
+		return A4(
+			$justinmimbs$time_extra$Time$Extra$timeFromClock,
+			A2($elm$time$Time$toHour, zone, posix),
+			A2($elm$time$Time$toMinute, zone, posix),
+			A2($elm$time$Time$toSecond, zone, posix),
+			A2($elm$time$Time$toMillis, zone, posix));
+	});
+var $justinmimbs$time_extra$Time$Extra$toOffset = F2(
+	function (zone, posix) {
+		var millis = $elm$time$Time$posixToMillis(posix);
+		var localMillis = $justinmimbs$time_extra$Time$Extra$dateToMillis(
+			A2($justinmimbs$date$Date$fromPosix, zone, posix)) + A2($justinmimbs$time_extra$Time$Extra$timeFromPosix, zone, posix);
+		return ((localMillis - millis) / 60000) | 0;
+	});
+var $justinmimbs$time_extra$Time$Extra$posixFromDateTime = F3(
+	function (zone, date, time) {
+		var millis = $justinmimbs$time_extra$Time$Extra$dateToMillis(date) + time;
+		var offset0 = A2(
+			$justinmimbs$time_extra$Time$Extra$toOffset,
+			zone,
+			$elm$time$Time$millisToPosix(millis));
+		var posix1 = $elm$time$Time$millisToPosix(millis - (offset0 * 60000));
+		var offset1 = A2($justinmimbs$time_extra$Time$Extra$toOffset, zone, posix1);
+		if (_Utils_eq(offset0, offset1)) {
+			return posix1;
+		} else {
+			var posix2 = $elm$time$Time$millisToPosix(millis - (offset1 * 60000));
+			var offset2 = A2($justinmimbs$time_extra$Time$Extra$toOffset, zone, posix2);
+			return _Utils_eq(offset1, offset2) ? posix2 : posix1;
+		}
+	});
+var $justinmimbs$time_extra$Time$Extra$add = F4(
+	function (interval, n, zone, posix) {
+		add:
+		while (true) {
+			switch (interval.$) {
+				case 'Millisecond':
+					return $elm$time$Time$millisToPosix(
+						$elm$time$Time$posixToMillis(posix) + n);
+				case 'Second':
+					var $temp$interval = $justinmimbs$time_extra$Time$Extra$Millisecond,
+						$temp$n = n * 1000,
+						$temp$zone = zone,
+						$temp$posix = posix;
+					interval = $temp$interval;
+					n = $temp$n;
+					zone = $temp$zone;
+					posix = $temp$posix;
+					continue add;
+				case 'Minute':
+					var $temp$interval = $justinmimbs$time_extra$Time$Extra$Millisecond,
+						$temp$n = n * 60000,
+						$temp$zone = zone,
+						$temp$posix = posix;
+					interval = $temp$interval;
+					n = $temp$n;
+					zone = $temp$zone;
+					posix = $temp$posix;
+					continue add;
+				case 'Hour':
+					var $temp$interval = $justinmimbs$time_extra$Time$Extra$Millisecond,
+						$temp$n = n * 3600000,
+						$temp$zone = zone,
+						$temp$posix = posix;
+					interval = $temp$interval;
+					n = $temp$n;
+					zone = $temp$zone;
+					posix = $temp$posix;
+					continue add;
+				case 'Day':
+					return A3(
+						$justinmimbs$time_extra$Time$Extra$posixFromDateTime,
+						zone,
+						A3(
+							$justinmimbs$date$Date$add,
+							$justinmimbs$date$Date$Days,
+							n,
+							A2($justinmimbs$date$Date$fromPosix, zone, posix)),
+						A2($justinmimbs$time_extra$Time$Extra$timeFromPosix, zone, posix));
+				case 'Month':
+					return A3(
+						$justinmimbs$time_extra$Time$Extra$posixFromDateTime,
+						zone,
+						A3(
+							$justinmimbs$date$Date$add,
+							$justinmimbs$date$Date$Months,
+							n,
+							A2($justinmimbs$date$Date$fromPosix, zone, posix)),
+						A2($justinmimbs$time_extra$Time$Extra$timeFromPosix, zone, posix));
+				case 'Year':
+					var $temp$interval = $justinmimbs$time_extra$Time$Extra$Month,
+						$temp$n = n * 12,
+						$temp$zone = zone,
+						$temp$posix = posix;
+					interval = $temp$interval;
+					n = $temp$n;
+					zone = $temp$zone;
+					posix = $temp$posix;
+					continue add;
+				case 'Quarter':
+					var $temp$interval = $justinmimbs$time_extra$Time$Extra$Month,
+						$temp$n = n * 3,
+						$temp$zone = zone,
+						$temp$posix = posix;
+					interval = $temp$interval;
+					n = $temp$n;
+					zone = $temp$zone;
+					posix = $temp$posix;
+					continue add;
+				case 'Week':
+					var $temp$interval = $justinmimbs$time_extra$Time$Extra$Day,
+						$temp$n = n * 7,
+						$temp$zone = zone,
+						$temp$posix = posix;
+					interval = $temp$interval;
+					n = $temp$n;
+					zone = $temp$zone;
+					posix = $temp$posix;
+					continue add;
+				default:
+					var weekday = interval;
+					var $temp$interval = $justinmimbs$time_extra$Time$Extra$Day,
+						$temp$n = n * 7,
+						$temp$zone = zone,
+						$temp$posix = posix;
+					interval = $temp$interval;
+					n = $temp$n;
+					zone = $temp$zone;
+					posix = $temp$posix;
+					continue add;
+			}
+		}
+	});
+var $justinmimbs$date$Date$Day = {$: 'Day'};
+var $justinmimbs$date$Date$Friday = {$: 'Friday'};
+var $justinmimbs$date$Date$Monday = {$: 'Monday'};
+var $justinmimbs$date$Date$Month = {$: 'Month'};
+var $justinmimbs$date$Date$Quarter = {$: 'Quarter'};
+var $justinmimbs$date$Date$Saturday = {$: 'Saturday'};
+var $justinmimbs$date$Date$Sunday = {$: 'Sunday'};
+var $justinmimbs$date$Date$Thursday = {$: 'Thursday'};
+var $justinmimbs$date$Date$Tuesday = {$: 'Tuesday'};
+var $justinmimbs$date$Date$Wednesday = {$: 'Wednesday'};
+var $justinmimbs$date$Date$Week = {$: 'Week'};
+var $justinmimbs$date$Date$Year = {$: 'Year'};
+var $elm$time$Time$Fri = {$: 'Fri'};
+var $elm$time$Time$Mon = {$: 'Mon'};
+var $elm$time$Time$Sat = {$: 'Sat'};
+var $elm$time$Time$Sun = {$: 'Sun'};
+var $elm$time$Time$Thu = {$: 'Thu'};
+var $elm$time$Time$Tue = {$: 'Tue'};
+var $elm$time$Time$Wed = {$: 'Wed'};
+var $justinmimbs$date$Date$weekdayNumber = function (_v0) {
+	var rd = _v0.a;
+	var _v1 = A2($elm$core$Basics$modBy, 7, rd);
+	if (!_v1) {
+		return 7;
+	} else {
+		var n = _v1;
+		return n;
+	}
+};
+var $justinmimbs$date$Date$weekdayToNumber = function (wd) {
+	switch (wd.$) {
+		case 'Mon':
+			return 1;
+		case 'Tue':
+			return 2;
+		case 'Wed':
+			return 3;
+		case 'Thu':
+			return 4;
+		case 'Fri':
+			return 5;
+		case 'Sat':
+			return 6;
+		default:
+			return 7;
+	}
+};
+var $justinmimbs$date$Date$daysSincePreviousWeekday = F2(
+	function (wd, date) {
+		return A2(
+			$elm$core$Basics$modBy,
+			7,
+			($justinmimbs$date$Date$weekdayNumber(date) + 7) - $justinmimbs$date$Date$weekdayToNumber(wd));
+	});
+var $justinmimbs$date$Date$firstOfMonth = F2(
+	function (y, m) {
+		return $justinmimbs$date$Date$RD(
+			($justinmimbs$date$Date$daysBeforeYear(y) + A2($justinmimbs$date$Date$daysBeforeMonth, y, m)) + 1);
+	});
+var $justinmimbs$date$Date$firstOfYear = function (y) {
+	return $justinmimbs$date$Date$RD(
+		$justinmimbs$date$Date$daysBeforeYear(y) + 1);
+};
+var $justinmimbs$date$Date$month = A2(
+	$elm$core$Basics$composeR,
+	$justinmimbs$date$Date$toCalendarDate,
+	function ($) {
+		return $.month;
+	});
+var $justinmimbs$date$Date$monthToQuarter = function (m) {
+	return (($justinmimbs$date$Date$monthToNumber(m) + 2) / 3) | 0;
+};
+var $justinmimbs$date$Date$quarter = A2($elm$core$Basics$composeR, $justinmimbs$date$Date$month, $justinmimbs$date$Date$monthToQuarter);
+var $justinmimbs$date$Date$quarterToMonth = function (q) {
+	return $justinmimbs$date$Date$numberToMonth((q * 3) - 2);
+};
+var $justinmimbs$date$Date$floor = F2(
+	function (interval, date) {
+		var rd = date.a;
+		switch (interval.$) {
+			case 'Year':
+				return $justinmimbs$date$Date$firstOfYear(
+					$justinmimbs$date$Date$year(date));
+			case 'Quarter':
+				return A2(
+					$justinmimbs$date$Date$firstOfMonth,
+					$justinmimbs$date$Date$year(date),
+					$justinmimbs$date$Date$quarterToMonth(
+						$justinmimbs$date$Date$quarter(date)));
+			case 'Month':
+				return A2(
+					$justinmimbs$date$Date$firstOfMonth,
+					$justinmimbs$date$Date$year(date),
+					$justinmimbs$date$Date$month(date));
+			case 'Week':
+				return $justinmimbs$date$Date$RD(
+					rd - A2($justinmimbs$date$Date$daysSincePreviousWeekday, $elm$time$Time$Mon, date));
+			case 'Monday':
+				return $justinmimbs$date$Date$RD(
+					rd - A2($justinmimbs$date$Date$daysSincePreviousWeekday, $elm$time$Time$Mon, date));
+			case 'Tuesday':
+				return $justinmimbs$date$Date$RD(
+					rd - A2($justinmimbs$date$Date$daysSincePreviousWeekday, $elm$time$Time$Tue, date));
+			case 'Wednesday':
+				return $justinmimbs$date$Date$RD(
+					rd - A2($justinmimbs$date$Date$daysSincePreviousWeekday, $elm$time$Time$Wed, date));
+			case 'Thursday':
+				return $justinmimbs$date$Date$RD(
+					rd - A2($justinmimbs$date$Date$daysSincePreviousWeekday, $elm$time$Time$Thu, date));
+			case 'Friday':
+				return $justinmimbs$date$Date$RD(
+					rd - A2($justinmimbs$date$Date$daysSincePreviousWeekday, $elm$time$Time$Fri, date));
+			case 'Saturday':
+				return $justinmimbs$date$Date$RD(
+					rd - A2($justinmimbs$date$Date$daysSincePreviousWeekday, $elm$time$Time$Sat, date));
+			case 'Sunday':
+				return $justinmimbs$date$Date$RD(
+					rd - A2($justinmimbs$date$Date$daysSincePreviousWeekday, $elm$time$Time$Sun, date));
+			default:
+				return date;
+		}
+	});
+var $justinmimbs$time_extra$Time$Extra$floorDate = F3(
+	function (dateInterval, zone, posix) {
+		return A3(
+			$justinmimbs$time_extra$Time$Extra$posixFromDateTime,
+			zone,
+			A2(
+				$justinmimbs$date$Date$floor,
+				dateInterval,
+				A2($justinmimbs$date$Date$fromPosix, zone, posix)),
+			0);
+	});
+var $justinmimbs$time_extra$Time$Extra$floor = F3(
+	function (interval, zone, posix) {
+		switch (interval.$) {
+			case 'Millisecond':
+				return posix;
+			case 'Second':
+				return A3(
+					$justinmimbs$time_extra$Time$Extra$posixFromDateTime,
+					zone,
+					A2($justinmimbs$date$Date$fromPosix, zone, posix),
+					A4(
+						$justinmimbs$time_extra$Time$Extra$timeFromClock,
+						A2($elm$time$Time$toHour, zone, posix),
+						A2($elm$time$Time$toMinute, zone, posix),
+						A2($elm$time$Time$toSecond, zone, posix),
+						0));
+			case 'Minute':
+				return A3(
+					$justinmimbs$time_extra$Time$Extra$posixFromDateTime,
+					zone,
+					A2($justinmimbs$date$Date$fromPosix, zone, posix),
+					A4(
+						$justinmimbs$time_extra$Time$Extra$timeFromClock,
+						A2($elm$time$Time$toHour, zone, posix),
+						A2($elm$time$Time$toMinute, zone, posix),
+						0,
+						0));
+			case 'Hour':
+				return A3(
+					$justinmimbs$time_extra$Time$Extra$posixFromDateTime,
+					zone,
+					A2($justinmimbs$date$Date$fromPosix, zone, posix),
+					A4(
+						$justinmimbs$time_extra$Time$Extra$timeFromClock,
+						A2($elm$time$Time$toHour, zone, posix),
+						0,
+						0,
+						0));
+			case 'Day':
+				return A3($justinmimbs$time_extra$Time$Extra$floorDate, $justinmimbs$date$Date$Day, zone, posix);
+			case 'Month':
+				return A3($justinmimbs$time_extra$Time$Extra$floorDate, $justinmimbs$date$Date$Month, zone, posix);
+			case 'Year':
+				return A3($justinmimbs$time_extra$Time$Extra$floorDate, $justinmimbs$date$Date$Year, zone, posix);
+			case 'Quarter':
+				return A3($justinmimbs$time_extra$Time$Extra$floorDate, $justinmimbs$date$Date$Quarter, zone, posix);
+			case 'Week':
+				return A3($justinmimbs$time_extra$Time$Extra$floorDate, $justinmimbs$date$Date$Week, zone, posix);
+			case 'Monday':
+				return A3($justinmimbs$time_extra$Time$Extra$floorDate, $justinmimbs$date$Date$Monday, zone, posix);
+			case 'Tuesday':
+				return A3($justinmimbs$time_extra$Time$Extra$floorDate, $justinmimbs$date$Date$Tuesday, zone, posix);
+			case 'Wednesday':
+				return A3($justinmimbs$time_extra$Time$Extra$floorDate, $justinmimbs$date$Date$Wednesday, zone, posix);
+			case 'Thursday':
+				return A3($justinmimbs$time_extra$Time$Extra$floorDate, $justinmimbs$date$Date$Thursday, zone, posix);
+			case 'Friday':
+				return A3($justinmimbs$time_extra$Time$Extra$floorDate, $justinmimbs$date$Date$Friday, zone, posix);
+			case 'Saturday':
+				return A3($justinmimbs$time_extra$Time$Extra$floorDate, $justinmimbs$date$Date$Saturday, zone, posix);
+			default:
+				return A3($justinmimbs$time_extra$Time$Extra$floorDate, $justinmimbs$date$Date$Sunday, zone, posix);
+		}
+	});
+var $justinmimbs$time_extra$Time$Extra$ceiling = F3(
+	function (interval, zone, posix) {
+		var floored = A3($justinmimbs$time_extra$Time$Extra$floor, interval, zone, posix);
+		return _Utils_eq(floored, posix) ? posix : A4($justinmimbs$time_extra$Time$Extra$add, interval, 1, zone, floored);
+	});
+var $author$project$Main$getNextHour = F2(
+	function (z, t) {
+		return function (x) {
+			return (x / 1000) | 0;
+		}(
+			$elm$time$Time$posixToMillis(
+				A3($justinmimbs$time_extra$Time$Extra$ceiling, $justinmimbs$time_extra$Time$Extra$Hour, z, t)));
+	});
+var $elm$core$Debug$log = _Debug_log;
+var $author$project$Direction$E = {$: 'E'};
+var $author$project$Direction$ENE = {$: 'ENE'};
+var $author$project$Direction$ESE = {$: 'ESE'};
+var $author$project$Direction$N = {$: 'N'};
+var $author$project$Direction$NE = {$: 'NE'};
+var $author$project$Direction$NNE = {$: 'NNE'};
+var $author$project$Direction$NNW = {$: 'NNW'};
+var $author$project$Direction$NW = {$: 'NW'};
+var $author$project$Direction$S = {$: 'S'};
+var $author$project$Direction$SE = {$: 'SE'};
+var $author$project$Direction$SSE = {$: 'SSE'};
+var $author$project$Direction$SSW = {$: 'SSW'};
+var $author$project$Direction$SW = {$: 'SW'};
+var $author$project$Direction$W = {$: 'W'};
+var $author$project$Direction$WNW = {$: 'WNW'};
+var $author$project$Direction$WSW = {$: 'WSW'};
+var $author$project$Direction$parseDegreeToDirection = function (degree) {
+	return (degree < 22.5) ? $author$project$Direction$N : ((degree < 45.0) ? $author$project$Direction$NNE : ((degree < 67.5) ? $author$project$Direction$NE : ((degree < 90) ? $author$project$Direction$ENE : ((degree < 112.5) ? $author$project$Direction$E : ((degree < 135.0) ? $author$project$Direction$ESE : ((degree < 157.5) ? $author$project$Direction$SE : ((degree < 180.0) ? $author$project$Direction$SSE : ((degree < 202.5) ? $author$project$Direction$S : ((degree < 225.0) ? $author$project$Direction$SSW : ((degree < 247.5) ? $author$project$Direction$SW : ((degree < 270.0) ? $author$project$Direction$WSW : ((degree < 292.5) ? $author$project$Direction$W : ((degree < 315.0) ? $author$project$Direction$WNW : ((degree < 337.5) ? $author$project$Direction$NW : $author$project$Direction$NNW))))))))))))));
+};
+var $elm$json$Json$Decode$andThen = _Json_andThen;
+var $elm$json$Json$Decode$fail = _Json_fail;
+var $elm$core$List$filter = F2(
+	function (isGood, list) {
+		return A3(
+			$elm$core$List$foldr,
+			F2(
+				function (x, xs) {
+					return isGood(x) ? A2($elm$core$List$cons, x, xs) : xs;
+				}),
+			_List_Nil,
+			list);
+	});
+var $elm$core$List$head = function (list) {
+	if (list.b) {
+		var x = list.a;
+		var xs = list.b;
+		return $elm$core$Maybe$Just(x);
+	} else {
+		return $elm$core$Maybe$Nothing;
+	}
+};
+var $author$project$Wind$filterNextHour = F2(
+	function (now, datapoints) {
+		var _v0 = $elm$core$List$head(
+			A2(
+				$elm$core$List$filter,
+				function (x) {
+					return _Utils_eq(
+						function ($) {
+							return $.timestamp;
+						}(x),
+						A2($elm$core$Debug$log, 'now', now));
+				},
+				datapoints));
+		if (_v0.$ === 'Nothing') {
+			return $elm$json$Json$Decode$fail('Couldnt decode the wind direction');
+		} else {
+			var direction = _v0.a;
+			return $elm$json$Json$Decode$succeed(direction);
+		}
+	});
+var $author$project$Wind$WindDataPoint = F5(
+	function (timestamp, speed, direction, gust, optimalScore) {
+		return {direction: direction, gust: gust, optimalScore: optimalScore, speed: speed, timestamp: timestamp};
+	});
+var $NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$custom = $elm$json$Json$Decode$map2($elm$core$Basics$apR);
+var $NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required = F3(
+	function (key, valDecoder, decoder) {
+		return A2(
+			$NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$custom,
+			A2($elm$json$Json$Decode$field, key, valDecoder),
+			decoder);
+	});
+var $author$project$Wind$windDataPointDecoder = A3(
+	$NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
+	'optimalScore',
+	$elm$json$Json$Decode$int,
+	A3(
+		$NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
+		'gust',
+		$elm$json$Json$Decode$float,
+		A3(
+			$NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
+			'direction',
+			$elm$json$Json$Decode$float,
+			A3(
+				$NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
+				'speed',
+				$elm$json$Json$Decode$float,
+				A3(
+					$NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
+					'timestamp',
+					$elm$json$Json$Decode$int,
+					$elm$json$Json$Decode$succeed($author$project$Wind$WindDataPoint))))));
+var $author$project$Wind$windListDecoder = A2(
+	$elm$json$Json$Decode$at,
+	_List_fromArray(
+		['data', 'wind']),
+	$elm$json$Json$Decode$list($author$project$Wind$windDataPointDecoder));
+var $author$project$Wind$windNextHourDecoder = function (now) {
+	return A2(
+		$elm$json$Json$Decode$andThen,
+		$author$project$Wind$filterNextHour(now),
+		$author$project$Wind$windListDecoder);
+};
+var $author$project$Wind$windDirectionDecoder = function (now) {
+	return A2(
+		$elm$json$Json$Decode$map,
+		A2(
+			$elm$core$Basics$composeR,
+			function ($) {
+				return $.direction;
+			},
+			$author$project$Direction$parseDegreeToDirection),
+		$author$project$Wind$windNextHourDecoder(now));
+};
+var $author$project$Main$getWindDirection = F2(
+	function (zone, time) {
+		return $elm$http$Http$get(
+			{
+				expect: A2(
+					$elm$http$Http$expectJson,
+					A2($elm$core$Basics$composeR, $krisajenkins$remotedata$RemoteData$fromResult, $author$project$Main$GotWindDirection),
+					$author$project$Wind$windDirectionDecoder(
+						A2(
+							$elm$core$Debug$log,
+							'get next hour',
+							A2($author$project$Main$getNextHour, zone, time)))),
+				url: 'https://services.surfline.com/kbyg/spots/forecasts/wind?spotId=5842041f4e65fad6a770883b&days=1'
+			});
+	});
 var $elm$json$Json$Decode$index = _Json_decodeIndex;
 var $author$project$SurfHeight$MinMax = F2(
 	function (min, max) {
 		return {max: max, min: min};
 	});
-var $elm$json$Json$Decode$andThen = _Json_andThen;
-var $elm$json$Json$Decode$fail = _Json_fail;
 var $author$project$SurfHeight$fromResult = function (result) {
 	if (result.$ === 'Ok') {
 		var a = result.a;
@@ -11093,28 +12010,10 @@ var $author$project$SurfHeight$heightDecoder = A2(
 		$elm$json$Json$Decode$index,
 		0,
 		A2($elm$json$Json$Decode$field, 'surf', $author$project$SurfHeight$minMaxDecoder)));
-var $elm$time$Time$Name = function (a) {
-	return {$: 'Name', a: a};
-};
-var $elm$time$Time$Offset = function (a) {
-	return {$: 'Offset', a: a};
-};
-var $elm$time$Time$Zone = F2(
-	function (a, b) {
-		return {$: 'Zone', a: a, b: b};
-	});
-var $elm$time$Time$customZone = $elm$time$Time$Zone;
-var $elm$time$Time$here = _Time_here(_Utils_Tuple0);
-var $elm$time$Time$Posix = function (a) {
-	return {$: 'Posix', a: a};
-};
-var $elm$time$Time$millisToPosix = $elm$time$Time$Posix;
-var $elm$time$Time$now = _Time_now($elm$time$Time$millisToPosix);
 var $author$project$SurfSpot$SurfSpot = F4(
 	function (id, name, idealConditions, score) {
 		return {id: id, idealConditions: idealConditions, name: name, score: score};
 	});
-var $NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$custom = $elm$json$Json$Decode$map2($elm$core$Basics$apR);
 var $NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$hardcoded = A2($elm$core$Basics$composeR, $elm$json$Json$Decode$succeed, $NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$custom);
 var $author$project$IdealConditions$IdealConditions = F4(
 	function (swellDirection, windDirection, surfHeight, tide) {
@@ -11135,13 +12034,6 @@ var $author$project$IdealConditions$arrayAsTuple2 = F2(
 			},
 			A2($elm$json$Json$Decode$index, 0, a));
 	});
-var $NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required = F3(
-	function (key, valDecoder, decoder) {
-		return A2(
-			$NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$custom,
-			A2($elm$json$Json$Decode$field, key, valDecoder),
-			decoder);
-	});
 var $author$project$Direction$fromResultDirection = function (result) {
 	if (result.$ === 'Ok') {
 		var a = result.a;
@@ -11151,22 +12043,6 @@ var $author$project$Direction$fromResultDirection = function (result) {
 		return $elm$json$Json$Decode$fail(errorMessage);
 	}
 };
-var $author$project$Direction$E = {$: 'E'};
-var $author$project$Direction$ENE = {$: 'ENE'};
-var $author$project$Direction$ESE = {$: 'ESE'};
-var $author$project$Direction$N = {$: 'N'};
-var $author$project$Direction$NE = {$: 'NE'};
-var $author$project$Direction$NNE = {$: 'NNE'};
-var $author$project$Direction$NNW = {$: 'NNW'};
-var $author$project$Direction$NW = {$: 'NW'};
-var $author$project$Direction$S = {$: 'S'};
-var $author$project$Direction$SE = {$: 'SE'};
-var $author$project$Direction$SSE = {$: 'SSE'};
-var $author$project$Direction$SSW = {$: 'SSW'};
-var $author$project$Direction$SW = {$: 'SW'};
-var $author$project$Direction$W = {$: 'W'};
-var $author$project$Direction$WNW = {$: 'WNW'};
-var $author$project$Direction$WSW = {$: 'WSW'};
 var $author$project$Direction$parseStringToDirection = function (string) {
 	switch (string) {
 		case 'N':
@@ -11270,9 +12146,6 @@ var $author$project$SurfSpot$spotDecoder = A2(
 				'id',
 				$elm$json$Json$Decode$int,
 				$elm$json$Json$Decode$succeed($author$project$SurfSpot$SurfSpot)))));
-var $author$project$Direction$parseDegreeToDirection = function (degree) {
-	return (degree < 22.5) ? $author$project$Direction$N : ((degree < 45.0) ? $author$project$Direction$NNE : ((degree < 67.5) ? $author$project$Direction$NE : ((degree < 90) ? $author$project$Direction$ENE : ((degree < 112.5) ? $author$project$Direction$E : ((degree < 135.0) ? $author$project$Direction$ESE : ((degree < 157.5) ? $author$project$Direction$SE : ((degree < 180.0) ? $author$project$Direction$SSE : ((degree < 202.5) ? $author$project$Direction$S : ((degree < 225.0) ? $author$project$Direction$SSW : ((degree < 247.5) ? $author$project$Direction$SW : ((degree < 270.0) ? $author$project$Direction$WSW : ((degree < 292.5) ? $author$project$Direction$W : ((degree < 315.0) ? $author$project$Direction$WNW : ((degree < 337.5) ? $author$project$Direction$NW : $author$project$Direction$NNW))))))))))))));
-};
 var $author$project$Swell$mapLists = function (listSwells) {
 	return A2(
 		$elm$core$List$map,
@@ -11343,15 +12216,6 @@ var $author$project$Tide$listTideDecoder = A2(
 	_List_fromArray(
 		['data', 'tides']),
 	$elm$json$Json$Decode$list($author$project$Tide$tideDataDecoder));
-var $elm$core$List$head = function (list) {
-	if (list.b) {
-		var x = list.a;
-		var xs = list.b;
-		return $elm$core$Maybe$Just(x);
-	} else {
-		return $elm$core$Maybe$Nothing;
-	}
-};
 var $elm$core$Maybe$map = F2(
 	function (f, maybe) {
 		if (maybe.$ === 'Just') {
@@ -11372,10 +12236,6 @@ var $elm$core$List$maximum = function (list) {
 		return $elm$core$Maybe$Nothing;
 	}
 };
-var $elm$core$Basics$min = F2(
-	function (x, y) {
-		return (_Utils_cmp(x, y) < 0) ? x : y;
-	});
 var $elm$core$List$minimum = function (list) {
 	if (list.b) {
 		var x = list.a;
@@ -11427,122 +12287,103 @@ var $author$project$Tide$tideFromTides = function (xs) {
 	return (value < 0.33) ? $author$project$Tide$Low : ((value < 0.66) ? $author$project$Tide$Mid : $author$project$Tide$High);
 };
 var $author$project$Tide$tideFromFloatDecoder = A2($elm$json$Json$Decode$map, $author$project$Tide$tideFromTides, $author$project$Tide$listTideDecoder);
-var $author$project$Direction$degreeToDirectionDecoder = A2($elm$json$Json$Decode$map, $author$project$Direction$parseDegreeToDirection, $elm$json$Json$Decode$float);
-var $author$project$Wind$windDirectionDecoder = A2(
-	$elm$json$Json$Decode$at,
-	_List_fromArray(
-		['data', 'wind']),
-	A2(
-		$elm$json$Json$Decode$index,
-		0,
-		A2($elm$json$Json$Decode$field, 'direction', $author$project$Direction$degreeToDirectionDecoder)));
-var $author$project$Main$initialCmd = function () {
-	var getWindUrl = 'https://services.surfline.com/kbyg/spots/forecasts/wind?spotId=5842041f4e65fad6a770883b&days=1';
-	var getWaveUrl = 'https://services.surfline.com/kbyg/spots/forecasts/wave?spotId=5842041f4e65fad6a770883b&days=1';
-	var getTideUrl = 'https://services.surfline.com/kbyg/spots/forecasts/tides?spotId=5842041f4e65fad6a770883b&days=1';
-	var getSpotsFromDBUrl = 'http://localhost:3000/spots';
-	return $elm$core$Platform$Cmd$batch(
-		_List_fromArray(
-			[
-				A2($elm$core$Task$perform, $author$project$Main$AdjustTimeZone, $elm$time$Time$here),
-				A2($elm$core$Task$perform, $author$project$Main$GetTime, $elm$time$Time$now),
-				$elm$http$Http$get(
-				{
-					expect: A2(
-						$elm$http$Http$expectJson,
-						A2($elm$core$Basics$composeR, $krisajenkins$remotedata$RemoteData$fromResult, $author$project$Main$GotWindDirection),
-						$author$project$Wind$windDirectionDecoder),
-					url: getWindUrl
-				}),
-				$elm$http$Http$get(
-				{
-					expect: A2(
-						$elm$http$Http$expectJson,
-						A2($elm$core$Basics$composeR, $krisajenkins$remotedata$RemoteData$fromResult, $author$project$Main$GotSwells),
-						$author$project$Swell$swellsDirectionsDecoder),
-					url: getWaveUrl
-				}),
-				$elm$http$Http$get(
-				{
-					expect: A2(
-						$elm$http$Http$expectJson,
-						A2($elm$core$Basics$composeR, $krisajenkins$remotedata$RemoteData$fromResult, $author$project$Main$GotHeight),
-						$author$project$SurfHeight$heightDecoder),
-					url: getWaveUrl
-				}),
-				$elm$http$Http$get(
-				{
-					expect: A2(
-						$elm$http$Http$expectJson,
-						A2($elm$core$Basics$composeR, $krisajenkins$remotedata$RemoteData$fromResult, $author$project$Main$GotTide),
-						$author$project$Tide$tideFromFloatDecoder),
-					url: getTideUrl
-				}),
-				$elm$http$Http$get(
-				{
-					expect: A2(
-						$elm$http$Http$expectJson,
-						A2($elm$core$Basics$composeR, $krisajenkins$remotedata$RemoteData$fromResult, $author$project$Main$GotSurfSpots),
-						$elm$json$Json$Decode$list($author$project$SurfSpot$spotDecoder)),
-					url: getSpotsFromDBUrl
-				})
-			]));
-}();
-var $krisajenkins$remotedata$RemoteData$Loading = {$: 'Loading'};
-var $elm$time$Time$utc = A2($elm$time$Time$Zone, 0, _List_Nil);
-var $author$project$Main$initialModel = {
-	surfHeight: $krisajenkins$remotedata$RemoteData$Loading,
-	surfSpots: $krisajenkins$remotedata$RemoteData$Loading,
-	swellDirections: $krisajenkins$remotedata$RemoteData$Loading,
-	tide: $krisajenkins$remotedata$RemoteData$Loading,
-	time: $elm$time$Time$millisToPosix(0),
-	windDirection: $krisajenkins$remotedata$RemoteData$Loading,
-	zone: $elm$time$Time$utc
-};
-var $elm$core$Platform$Sub$batch = _Platform_batch;
-var $elm$core$Platform$Sub$none = $elm$core$Platform$Sub$batch(_List_Nil);
+var $author$project$Main$makeRequests = F2(
+	function (zone, time) {
+		var getWindUrl = 'https://services.surfline.com/kbyg/spots/forecasts/wind?spotId=5842041f4e65fad6a770883b&days=1';
+		var getWaveUrl = 'https://services.surfline.com/kbyg/spots/forecasts/wave?spotId=5842041f4e65fad6a770883b&days=1';
+		var getTideUrl = 'https://services.surfline.com/kbyg/spots/forecasts/tides?spotId=5842041f4e65fad6a770883b&days=1';
+		var getSpotsFromDBUrl = 'http://localhost:3000/spots';
+		return $elm$core$Platform$Cmd$batch(
+			_List_fromArray(
+				[
+					A2($author$project$Main$getWindDirection, zone, time),
+					$elm$http$Http$get(
+					{
+						expect: A2(
+							$elm$http$Http$expectJson,
+							A2($elm$core$Basics$composeR, $krisajenkins$remotedata$RemoteData$fromResult, $author$project$Main$GotSwells),
+							$author$project$Swell$swellsDirectionsDecoder),
+						url: getWaveUrl
+					}),
+					$elm$http$Http$get(
+					{
+						expect: A2(
+							$elm$http$Http$expectJson,
+							A2($elm$core$Basics$composeR, $krisajenkins$remotedata$RemoteData$fromResult, $author$project$Main$GotHeight),
+							$author$project$SurfHeight$heightDecoder),
+						url: getWaveUrl
+					}),
+					$elm$http$Http$get(
+					{
+						expect: A2(
+							$elm$http$Http$expectJson,
+							A2($elm$core$Basics$composeR, $krisajenkins$remotedata$RemoteData$fromResult, $author$project$Main$GotTide),
+							$author$project$Tide$tideFromFloatDecoder),
+						url: getTideUrl
+					}),
+					$elm$http$Http$get(
+					{
+						expect: A2(
+							$elm$http$Http$expectJson,
+							A2($elm$core$Basics$composeR, $krisajenkins$remotedata$RemoteData$fromResult, $author$project$Main$GotSurfSpots),
+							$elm$json$Json$Decode$list($author$project$SurfSpot$spotDecoder)),
+						url: getSpotsFromDBUrl
+					})
+				]));
+	});
 var $author$project$Main$update = F2(
 	function (msg, model) {
-		var updatedModel = function () {
-			switch (msg.$) {
-				case 'GetTime':
-					var time = msg.a;
-					return _Utils_update(
+		switch (msg.$) {
+			case 'GetTime':
+				var time = msg.a;
+				return _Utils_Tuple2(
+					_Utils_update(
 						model,
-						{time: time});
-				case 'AdjustTimeZone':
-					var tz = msg.a;
-					return _Utils_update(
+						{time: time}),
+					A2($author$project$Main$makeRequests, $elm$time$Time$utc, time));
+			case 'AdjustTimeZone':
+				var tz = msg.a;
+				return _Utils_Tuple2(
+					_Utils_update(
 						model,
-						{zone: tz});
-				case 'GotSurfSpots':
-					var surfSpots = msg.a;
-					return _Utils_update(
+						{zone: tz}),
+					$elm$core$Platform$Cmd$none);
+			case 'GotSurfSpots':
+				var surfSpots = msg.a;
+				return _Utils_Tuple2(
+					_Utils_update(
 						model,
-						{surfSpots: surfSpots});
-				case 'GotWindDirection':
-					var windDirection = msg.a;
-					return _Utils_update(
+						{surfSpots: surfSpots}),
+					$elm$core$Platform$Cmd$none);
+			case 'GotWindDirection':
+				var windDirection = msg.a;
+				return _Utils_Tuple2(
+					_Utils_update(
 						model,
-						{windDirection: windDirection});
-				case 'GotSwells':
-					var swells = msg.a;
-					return _Utils_update(
+						{windDirection: windDirection}),
+					$elm$core$Platform$Cmd$none);
+			case 'GotSwells':
+				var swells = msg.a;
+				return _Utils_Tuple2(
+					_Utils_update(
 						model,
-						{swellDirections: swells});
-				case 'GotTide':
-					var tide = msg.a;
-					return _Utils_update(
+						{swellDirections: swells}),
+					$elm$core$Platform$Cmd$none);
+			case 'GotTide':
+				var tide = msg.a;
+				return _Utils_Tuple2(
+					_Utils_update(
 						model,
-						{tide: tide});
-				default:
-					var surfHeight = msg.a;
-					return _Utils_update(
+						{tide: tide}),
+					$elm$core$Platform$Cmd$none);
+			default:
+				var surfHeight = msg.a;
+				return _Utils_Tuple2(
+					_Utils_update(
 						model,
-						{surfHeight: surfHeight});
-			}
-		}();
-		return _Utils_Tuple2(updatedModel, $elm$core$Platform$Cmd$none);
+						{surfHeight: surfHeight}),
+					$elm$core$Platform$Cmd$none);
+		}
 	});
 var $author$project$Main$FiveData = F5(
 	function (a, b, c, d, e) {
@@ -14904,17 +15745,6 @@ var $mdgriffith$elm_ui$Internal$Model$renderNullAdjustmentRule = F2(
 var $mdgriffith$elm_ui$Internal$Model$adjust = F3(
 	function (size, height, vertical) {
 		return {height: height / size, size: size, vertical: vertical};
-	});
-var $elm$core$List$filter = F2(
-	function (isGood, list) {
-		return A3(
-			$elm$core$List$foldr,
-			F2(
-				function (x, xs) {
-					return isGood(x) ? A2($elm$core$List$cons, x, xs) : xs;
-				}),
-			_List_Nil,
-			list);
 	});
 var $mdgriffith$elm_ui$Internal$Model$convertAdjustment = function (adjustment) {
 	var lines = _List_fromArray(

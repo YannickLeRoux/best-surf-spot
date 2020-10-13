@@ -1,6 +1,6 @@
 module Wind exposing (windDirectionDecoder)
 
-import Direction exposing (Direction, degreeToDirectionDecoder)
+import Direction exposing (Direction, degreeToDirectionDecoder, parseDegreeToDirection)
 import Json.Decode as JD exposing (Decoder, andThen, at, fail, field, float, index, int, list, string, succeed)
 import Json.Decode.Pipeline exposing (optional, required, requiredAt)
 
@@ -8,7 +8,7 @@ import Json.Decode.Pipeline exposing (optional, required, requiredAt)
 type alias WindDataPoint =
     { timestamp : Int
     , speed : Float
-    , direction : Int
+    , direction : Float
     , gust : Float
     , optimalScore : Int
     }
@@ -19,19 +19,19 @@ windDataPointDecoder =
     succeed WindDataPoint
         |> required "timestamp" int
         |> required "speed" float
-        |> required "direction" int
+        |> required "direction" float
         |> required "gust" float
         |> required "optimalScore" int
 
 
-windListDecoder : Decoder Int
+windListDecoder : Decoder (List WindDataPoint)
 windListDecoder =
-    (at [ "data", "wind" ] <| list windDataPointDecoder) |> andThen (filterNextHour 123) |> andThen (succeed .direction)
+    at [ "data", "wind" ] <| list windDataPointDecoder
 
 
 filterNextHour : Int -> List WindDataPoint -> Decoder WindDataPoint
 filterNextHour now datapoints =
-    case List.head <| List.filter (\x -> .timestamp x == now) datapoints of
+    case List.head <| List.filter (\x -> .timestamp x == Debug.log "now" now) datapoints of
         Nothing ->
             fail "Couldnt decode the wind direction"
 
@@ -41,9 +41,9 @@ filterNextHour now datapoints =
 
 windNextHourDecoder : Int -> Decoder WindDataPoint
 windNextHourDecoder now =
-    JD.map (filterNextHour now) windListDecoder
+    windListDecoder |> JD.andThen (filterNextHour now)
 
 
 windDirectionDecoder : Int -> Decoder Direction
 windDirectionDecoder now =
-    JD.map (windNextHourDecoder now) degreeToDirectionDecoder
+    windNextHourDecoder now |> JD.map (.direction >> parseDegreeToDirection)
