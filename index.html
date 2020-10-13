@@ -12340,7 +12340,7 @@ var $author$project$Main$update = F2(
 					_Utils_update(
 						model,
 						{time: time}),
-					A2($author$project$Main$makeRequests, $elm$time$Time$utc, time));
+					A2($author$project$Main$makeRequests, model.zone, time));
 			case 'AdjustTimeZone':
 				var tz = msg.a;
 				return _Utils_Tuple2(

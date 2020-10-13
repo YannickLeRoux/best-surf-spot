@@ -132,7 +132,7 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         GetTime time ->
-            ( { model | time = time }, makeRequests Time.utc time )
+            ( { model | time = time }, makeRequests model.zone time )
 
         -- change to california
         AdjustTimeZone tz ->
