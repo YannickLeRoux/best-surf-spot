@@ -29,8 +29,8 @@ swellsDecoder =
     at [ "data", "wave" ] <| index 0 <| field "swells" <| list swellDecoder
 
 
-swellsDirectionsDecoder : Decoder (List Direction)
-swellsDirectionsDecoder =
+swellsDirectionsDecoder : Int -> Decoder (List Direction)
+swellsDirectionsDecoder now =
     Json.Decode.map mapLists swellsDecoder
 
 

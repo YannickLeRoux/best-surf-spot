@@ -53,11 +53,6 @@ initialModel =
     }
 
 
-windDecoder : Model -> Decoder Direction
-windDecoder model =
-    windDirectionDecoder (getNextHour model.zone model.time)
-
-
 initialCmd : Cmd Msg
 initialCmd =
     Cmd.batch
@@ -82,11 +77,8 @@ makeRequests zone time =
             "https://services.surfline.com/kbyg/spots/forecasts/tides?spotId=5842041f4e65fad6a770883b&days=1"
     in
     Cmd.batch
-        [ getWindDirection zone time
-        , Http.get
-            { url = getWaveUrl
-            , expect = expectJson (RemoteData.fromResult >> GotSwells) swellsDirectionsDecoder
-            }
+        [ getWindDirection getWindUrl zone time
+        , getSwellDirections getWaveUrl zone time
         , Http.get
             { url = getWaveUrl
             , expect = expectJson (RemoteData.fromResult >> GotHeight) heightDecoder
@@ -102,11 +94,19 @@ makeRequests zone time =
         ]
 
 
-getWindDirection : Time.Zone -> Time.Posix -> Cmd Msg
-getWindDirection zone time =
+getWindDirection : String -> Time.Zone -> Time.Posix -> Cmd Msg
+getWindDirection url zone time =
     Http.get
-        { url = "https://services.surfline.com/kbyg/spots/forecasts/wind?spotId=5842041f4e65fad6a770883b&days=1"
-        , expect = expectJson (RemoteData.fromResult >> GotWindDirection) <| windDirectionDecoder <| Debug.log "get next hour" (getNextHour zone time)
+        { url = url
+        , expect = expectJson (RemoteData.fromResult >> GotWindDirection) <| windDirectionDecoder <| getNextHour zone time
+        }
+
+
+getSwellDirections : String -> Time.Zone -> Time.Posix -> Cmd Msg
+getSwellDirections url zone time =
+    Http.get
+        { url = url
+        , expect = expectJson (RemoteData.fromResult >> GotSwells) <| swellsDirectionsDecoder <| getNextHour zone time
         }
 
 
