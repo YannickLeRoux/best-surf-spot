@@ -31,7 +31,7 @@ windListDecoder =
 
 filterNextHour : Int -> List WindDataPoint -> Decoder WindDataPoint
 filterNextHour now datapoints =
-    case List.head <| List.filter (\x -> .timestamp x == Debug.log "now" now) datapoints of
+    case List.head <| List.filter (\x -> .timestamp x == now) datapoints of
         Nothing ->
             fail "Couldnt decode the wind direction"
 
