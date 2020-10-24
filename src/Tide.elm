@@ -1,6 +1,6 @@
-module Tide exposing (Tide(..), TideDataPoint, listTideDecoder, tideDecoder, tideFromFloatDecoder, tideFromTides)
+module Tide exposing (Tide(..), TideDataPoint, tideDecoder, tideFromFloatDecoder)
 
-import Json.Decode as JD exposing (Decoder, at, field, float, index, int, list, string, succeed)
+import Json.Decode as JD exposing (Decoder, at, float, int, list, string, succeed)
 import Json.Decode.Pipeline exposing (required)
 
 

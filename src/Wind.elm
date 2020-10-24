@@ -1,8 +1,8 @@
 module Wind exposing (windDirectionDecoder)
 
-import Direction exposing (Direction, degreeToDirectionDecoder, parseDegreeToDirection)
-import Json.Decode as JD exposing (Decoder, andThen, at, fail, field, float, index, int, list, string, succeed)
-import Json.Decode.Pipeline exposing (optional, required, requiredAt)
+import Direction exposing (Direction, parseDegreeToDirection)
+import Json.Decode as JD exposing (Decoder, at, fail, float, int, list, succeed)
+import Json.Decode.Pipeline exposing (required)
 
 
 type alias WindDataPoint =
@@ -24,9 +24,17 @@ windDataPointDecoder =
         |> required "optimalScore" int
 
 
+
+-- 1/ decoder the whole wind object
+
+
 windListDecoder : Decoder (List WindDataPoint)
 windListDecoder =
     at [ "data", "wind" ] <| list windDataPointDecoder
+
+
+
+-- Now focus on the element with the current timestamp
 
 
 filterNextHour : Int -> List WindDataPoint -> Decoder WindDataPoint

@@ -1,22 +1,15 @@
 module SurfHeight exposing (SurfHeight, heightDecoder)
 
-import Json.Decode as JD exposing (Decoder, at, field, float, index, int, list, map2, string, succeed)
+import Json.Decode as JD exposing (Decoder, at, fail, field, float, index, int, list, map2, succeed)
 import Json.Decode.Pipeline exposing (required)
 
 
 
--- MODEL
+-- DATA
 
 
-type alias Wave =
-    List WaveElement
-
-
-type alias WaveElement =
-    { timestamp : Int
-    , surf : Surf
-    , swells : List Swell
-    }
+type SurfHeight
+    = SurfHeight Float Float
 
 
 type alias Surf =
@@ -35,76 +28,81 @@ type alias Swell =
     }
 
 
-type alias SurfHeight =
-    ( Float, Float )
-
-
-type alias MinMax =
-    { min : Float
-    , max : Float
+type alias SwellDataPoint =
+    { timestamp : Int
+    , surf : Surf
+    , swells : List Swell
     }
 
 
 
--- DECODER
+-- DECODERS
 
 
-heightDecoder : Decoder SurfHeight
-heightDecoder =
-    at [ "data", "wave" ] <| index 0 <| field "surf" minMaxDecoder
-
-
-minMaxDecoder : Decoder SurfHeight
-minMaxDecoder =
-    map2 MinMax (field "min" float) (field "max" float) |> JD.andThen (fromResult << parseHeight)
-
-
-fromResult : Result String a -> Decoder a
-fromResult result =
-    case result of
-        Ok a ->
-            JD.succeed a
-
-        Err errorMessage ->
-            JD.fail errorMessage
-
-
-fromMinMax : MinMax -> ( Float, Float )
-fromMinMax { min, max } =
-    ( min, max )
-
-
-parseHeight : MinMax -> Result String SurfHeight
-parseHeight { min, max } =
-    Ok ( min, max )
-
-
-wave : Decoder Wave
-wave =
-    list waveElement
-
-
-waveElement : Decoder WaveElement
-waveElement =
-    succeed WaveElement
-        |> required "timestamp" int
-        |> required "surf" surf
-        |> required "swells" (list swell)
-
-
-surf : Decoder Surf
-surf =
-    succeed Surf
-        |> required "min" float
-        |> required "max" float
-        |> required "optimalScore" int
-
-
-swell : Decoder Swell
-swell =
+swellDecoder : Decoder Swell
+swellDecoder =
     succeed Swell
         |> required "height" float
         |> required "period" int
         |> required "direction" float
         |> required "directionMin" float
         |> required "optimalScore" int
+
+
+surfDecoder : Decoder Surf
+surfDecoder =
+    succeed Surf
+        |> required "min" float
+        |> required "max" float
+        |> required "optimalScore" int
+
+
+swellDataPointDecoder : Decoder SwellDataPoint
+swellDataPointDecoder =
+    succeed SwellDataPoint
+        |> required "timestamp" int
+        |> required "surf" surfDecoder
+        |> required "swells" (list swellDecoder)
+
+
+
+-- 1/ decode the whole data object, its a list of elements with a timestamp each
+
+
+swellsDecoder : Decoder (List SwellDataPoint)
+swellsDecoder =
+    at [ "data", "wave" ] <| list swellDataPointDecoder
+
+
+
+-- 2/ Decode only the element corresponding to the current timestamp
+
+
+filterNextHour : Int -> List SwellDataPoint -> Decoder SwellDataPoint
+filterNextHour now datapoints =
+    case List.head <| List.filter (\x -> .timestamp x == now) datapoints of
+        Nothing ->
+            fail "Couldnt decode the surf height"
+
+        Just swell ->
+            succeed swell
+
+
+swellNextHourDecoder : Int -> Decoder SwellDataPoint
+swellNextHourDecoder now =
+    swellsDecoder |> JD.andThen (filterNextHour now)
+
+
+
+-- 3/ extract the surf object
+-- TODO Problem around these 2 functions
+
+
+heightDecoder : Int -> Decoder SurfHeight
+heightDecoder now =
+    swellNextHourDecoder now |> JD.map (.surf >> surfToHeight)
+
+
+surfToHeight : Surf -> SurfHeight
+surfToHeight surf =
+    SurfHeight surf.min surf.max

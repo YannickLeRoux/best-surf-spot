@@ -1,7 +1,7 @@
 module SurfSpot exposing (SurfSpot, spotDecoder)
 
 import IdealConditions exposing (IdealConditions, idealConditionsDecoder)
-import Json.Decode exposing (Decoder, int, list, string, succeed)
+import Json.Decode exposing (Decoder, int, string, succeed)
 import Json.Decode.Pipeline exposing (hardcoded, required)
 
 

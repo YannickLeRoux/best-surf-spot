@@ -1,28 +1,19 @@
-module Main exposing (getNextHour, main)
+module Main exposing (main)
 
 import Browser
-import CurrentConditions exposing (CurrentConditions)
-import Direction exposing (Direction(..), fromResultDirection, parseDegreeToDirection)
+import Direction exposing (Direction(..))
 import Element exposing (..)
-import Element.Background as Background
-import Element.Border as Border
-import Element.Font as Font
-import Element.Input as Input
 import Html exposing (Html)
 import Http exposing (expectJson)
-import IdealConditions exposing (IdealConditions)
-import Json.Decode as JD exposing (Decoder, int, list, string, succeed)
-import Json.Decode.Pipeline exposing (optional, required)
-import Maybe.Extra exposing (combine)
+import Json.Decode exposing (list)
 import RemoteData exposing (RemoteData(..), WebData, andMap)
-import RemoteData.Http
 import SurfHeight exposing (SurfHeight, heightDecoder)
 import SurfSpot exposing (SurfSpot, spotDecoder)
-import Swell exposing (Swell, swellsDirectionsDecoder)
+import Swell exposing (swellsDirectionsDecoder)
 import Task
-import Tide exposing (Tide(..), TideDataPoint, listTideDecoder, tideFromFloatDecoder, tideFromTides)
-import Time exposing (Month(..), Zone, posixToMillis)
-import Time.Extra exposing (Interval(..), ceiling)
+import Tide exposing (Tide(..), tideFromFloatDecoder)
+import Time exposing (Month(..), posixToMillis)
+import Time.Extra exposing (Interval(..))
 import Wind exposing (windDirectionDecoder)
 
 
@@ -34,7 +25,7 @@ type alias Model =
     { surfSpots : WebData (List SurfSpot)
     , swellDirections : WebData (List Direction)
     , windDirection : WebData Direction
-    , surfHeight : WebData ( Float, Float )
+    , surfHeight : WebData SurfHeight
     , tide : WebData Tide
     , zone : Time.Zone
     , time : Time.Posix
@@ -79,10 +70,7 @@ makeRequests zone time =
     Cmd.batch
         [ getWindDirection getWindUrl zone time
         , getSwellDirections getWaveUrl zone time
-        , Http.get
-            { url = getWaveUrl
-            , expect = expectJson (RemoteData.fromResult >> GotHeight) heightDecoder
-            }
+        , getWavesHeight getWaveUrl zone time
         , Http.get
             { url = getTideUrl
             , expect = expectJson (RemoteData.fromResult >> GotTide) tideFromFloatDecoder
@@ -92,6 +80,10 @@ makeRequests zone time =
             , expect = expectJson (RemoteData.fromResult >> GotSurfSpots) (list spotDecoder)
             }
         ]
+
+
+
+-- HTTP REQUESTS
 
 
 getWindDirection : String -> Time.Zone -> Time.Posix -> Cmd Msg
@@ -106,7 +98,15 @@ getSwellDirections : String -> Time.Zone -> Time.Posix -> Cmd Msg
 getSwellDirections url zone time =
     Http.get
         { url = url
-        , expect = expectJson (RemoteData.fromResult >> GotSwells) <| swellsDirectionsDecoder <| getNextHour zone time
+        , expect = expectJson (RemoteData.fromResult >> GotHeight) <| heightDecoder <| getNextHour zone time
+        }
+
+
+getWavesHeight : String -> Time.Zone -> Time.Posix -> Cmd Msg
+getWavesHeight url zone time =
+    Http.get
+        { url = url
+        , expect = expectJson (RemoteData.fromResult >> GotHeight) <| heightDecoder <| getNextHour zone time
         }
 
 
@@ -123,7 +123,7 @@ type Msg
     | GotWindDirection (WebData Direction)
     | GotSwells (WebData (List Direction))
     | GotTide (WebData Tide)
-    | GotHeight (WebData ( Float, Float ))
+    | GotHeight (WebData SurfHeight)
     | AdjustTimeZone Time.Zone
     | GetTime Time.Posix
 
@@ -163,9 +163,9 @@ checkIfLoaded :
     WebData (List SurfSpot)
     -> WebData (List Direction)
     -> WebData Direction
-    -> WebData ( Float, Float )
+    -> WebData SurfHeight
     -> WebData Tide
-    -> WebData (FiveData (List SurfSpot) (List Direction) Direction ( Float, Float ) Tide)
+    -> WebData (FiveData (List SurfSpot) (List Direction) Direction SurfHeight Tide)
 checkIfLoaded a b c d e =
     RemoteData.map (\f g h i j -> FiveData f g h i j) a |> andMap b |> andMap c |> andMap d |> andMap e
 
@@ -203,7 +203,7 @@ view model =
             Loading ->
                 el [] (text "Loading...")
 
-            Success loadedData ->
+            Success _ ->
                 el [] (text "Success")
 
             NotAsked ->

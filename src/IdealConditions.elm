@@ -1,8 +1,8 @@
 module IdealConditions exposing (IdealConditions, idealConditionsDecoder)
 
 import Direction exposing (Direction, stringToDirectionDecoder)
-import Json.Decode exposing (Decoder, andThen, index, int, list, string, succeed)
-import Json.Decode.Pipeline exposing (optional, required)
+import Json.Decode exposing (Decoder, andThen, index, int, list, succeed)
+import Json.Decode.Pipeline exposing (required)
 import Tide exposing (Tide, tideDecoder)
 
 
