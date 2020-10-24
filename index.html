@@ -10813,6 +10813,7 @@ var $author$project$Main$initialModel = {
 };
 var $elm$core$Platform$Sub$batch = _Platform_batch;
 var $elm$core$Platform$Sub$none = $elm$core$Platform$Sub$batch(_List_Nil);
+var $elm$core$Debug$log = _Debug_log;
 var $author$project$Main$GotSurfSpots = function (a) {
 	return {$: 'GotSurfSpots', a: a};
 };
@@ -11082,8 +11083,8 @@ var $elm$http$Http$get = function (r) {
 	return $elm$http$Http$request(
 		{body: $elm$http$Http$emptyBody, expect: r.expect, headers: _List_Nil, method: 'GET', timeout: $elm$core$Maybe$Nothing, tracker: $elm$core$Maybe$Nothing, url: r.url});
 };
-var $author$project$Main$GotHeight = function (a) {
-	return {$: 'GotHeight', a: a};
+var $author$project$Main$GotSwells = function (a) {
+	return {$: 'GotSwells', a: a};
 };
 var $justinmimbs$time_extra$Time$Extra$Hour = {$: 'Hour'};
 var $justinmimbs$time_extra$Time$Extra$Day = {$: 'Day'};
@@ -11836,13 +11837,6 @@ var $author$project$Main$getNextHour = F2(
 			$elm$time$Time$posixToMillis(
 				A3($justinmimbs$time_extra$Time$Extra$ceiling, $justinmimbs$time_extra$Time$Extra$Hour, z, t)));
 	});
-var $author$project$SurfHeight$SurfHeight = F2(
-	function (a, b) {
-		return {$: 'SurfHeight', a: a, b: b};
-	});
-var $author$project$SurfHeight$surfToHeight = function (surf) {
-	return A2($author$project$SurfHeight$SurfHeight, surf.min, surf.max);
-};
 var $elm$json$Json$Decode$andThen = _Json_andThen;
 var $elm$json$Json$Decode$fail = _Json_fail;
 var $elm$core$List$filter = F2(
@@ -11864,6 +11858,174 @@ var $elm$core$List$head = function (list) {
 	} else {
 		return $elm$core$Maybe$Nothing;
 	}
+};
+var $author$project$Swell$filterNextHour = F2(
+	function (now, datapoints) {
+		var _v0 = $elm$core$List$head(
+			A2(
+				$elm$core$List$filter,
+				function (x) {
+					return _Utils_eq(
+						function ($) {
+							return $.timestamp;
+						}(x),
+						now);
+				},
+				datapoints));
+		if (_v0.$ === 'Nothing') {
+			return $elm$json$Json$Decode$fail('Couldnt decode the wind direction');
+		} else {
+			var swell = _v0.a;
+			return $elm$json$Json$Decode$succeed(swell);
+		}
+	});
+var $author$project$Swell$SwellDataPoint = F3(
+	function (timestamp, surf, swells) {
+		return {surf: surf, swells: swells, timestamp: timestamp};
+	});
+var $NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$custom = $elm$json$Json$Decode$map2($elm$core$Basics$apR);
+var $NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required = F3(
+	function (key, valDecoder, decoder) {
+		return A2(
+			$NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$custom,
+			A2($elm$json$Json$Decode$field, key, valDecoder),
+			decoder);
+	});
+var $author$project$Swell$Surf = F3(
+	function (min, max, optimalScore) {
+		return {max: max, min: min, optimalScore: optimalScore};
+	});
+var $author$project$Swell$surfDecoder = A3(
+	$NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
+	'optimalScore',
+	$elm$json$Json$Decode$int,
+	A3(
+		$NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
+		'max',
+		$elm$json$Json$Decode$float,
+		A3(
+			$NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
+			'min',
+			$elm$json$Json$Decode$float,
+			$elm$json$Json$Decode$succeed($author$project$Swell$Surf))));
+var $author$project$Swell$Swell = F5(
+	function (height, period, direction, directionMin, optimalScore) {
+		return {direction: direction, directionMin: directionMin, height: height, optimalScore: optimalScore, period: period};
+	});
+var $author$project$Swell$swellDecoder = A3(
+	$NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
+	'optimalScore',
+	$elm$json$Json$Decode$int,
+	A3(
+		$NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
+		'directionMin',
+		$elm$json$Json$Decode$float,
+		A3(
+			$NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
+			'direction',
+			$elm$json$Json$Decode$float,
+			A3(
+				$NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
+				'period',
+				$elm$json$Json$Decode$int,
+				A3(
+					$NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
+					'height',
+					$elm$json$Json$Decode$float,
+					$elm$json$Json$Decode$succeed($author$project$Swell$Swell))))));
+var $author$project$Swell$swellDataPointDecoder = A3(
+	$NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
+	'swells',
+	$elm$json$Json$Decode$list($author$project$Swell$swellDecoder),
+	A3(
+		$NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
+		'surf',
+		$author$project$Swell$surfDecoder,
+		A3(
+			$NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
+			'timestamp',
+			$elm$json$Json$Decode$int,
+			$elm$json$Json$Decode$succeed($author$project$Swell$SwellDataPoint))));
+var $author$project$Swell$swellsDecoder = A2(
+	$elm$json$Json$Decode$at,
+	_List_fromArray(
+		['data', 'wave']),
+	$elm$json$Json$Decode$list($author$project$Swell$swellDataPointDecoder));
+var $author$project$Swell$swellNextHourDecoder = function (now) {
+	return A2(
+		$elm$json$Json$Decode$andThen,
+		$author$project$Swell$filterNextHour(now),
+		$author$project$Swell$swellsDecoder);
+};
+var $author$project$Direction$E = {$: 'E'};
+var $author$project$Direction$ENE = {$: 'ENE'};
+var $author$project$Direction$ESE = {$: 'ESE'};
+var $author$project$Direction$N = {$: 'N'};
+var $author$project$Direction$NE = {$: 'NE'};
+var $author$project$Direction$NNE = {$: 'NNE'};
+var $author$project$Direction$NNW = {$: 'NNW'};
+var $author$project$Direction$NW = {$: 'NW'};
+var $author$project$Direction$S = {$: 'S'};
+var $author$project$Direction$SE = {$: 'SE'};
+var $author$project$Direction$SSE = {$: 'SSE'};
+var $author$project$Direction$SSW = {$: 'SSW'};
+var $author$project$Direction$SW = {$: 'SW'};
+var $author$project$Direction$W = {$: 'W'};
+var $author$project$Direction$WNW = {$: 'WNW'};
+var $author$project$Direction$WSW = {$: 'WSW'};
+var $author$project$Direction$parseDegreeToDirection = function (degree) {
+	return (degree < 22.5) ? $author$project$Direction$N : ((degree < 45.0) ? $author$project$Direction$NNE : ((degree < 67.5) ? $author$project$Direction$NE : ((degree < 90) ? $author$project$Direction$ENE : ((degree < 112.5) ? $author$project$Direction$E : ((degree < 135.0) ? $author$project$Direction$ESE : ((degree < 157.5) ? $author$project$Direction$SE : ((degree < 180.0) ? $author$project$Direction$SSE : ((degree < 202.5) ? $author$project$Direction$S : ((degree < 225.0) ? $author$project$Direction$SSW : ((degree < 247.5) ? $author$project$Direction$SW : ((degree < 270.0) ? $author$project$Direction$WSW : ((degree < 292.5) ? $author$project$Direction$W : ((degree < 315.0) ? $author$project$Direction$WNW : ((degree < 337.5) ? $author$project$Direction$NW : $author$project$Direction$NNW))))))))))))));
+};
+var $elm$core$List$sortBy = _List_sortBy;
+var $author$project$Swell$swellToDirection = function (listSwells) {
+	return A2(
+		$elm$core$List$map,
+		A2(
+			$elm$core$Basics$composeL,
+			$author$project$Direction$parseDegreeToDirection,
+			function ($) {
+				return $.direction;
+			}),
+		$elm$core$List$reverse(
+			A2(
+				$elm$core$List$sortBy,
+				function ($) {
+					return $.height;
+				},
+				listSwells)));
+};
+var $author$project$Swell$swellsDirectionsDecoder = function (now) {
+	return A2(
+		$elm$json$Json$Decode$map,
+		A2(
+			$elm$core$Basics$composeR,
+			function ($) {
+				return $.swells;
+			},
+			$author$project$Swell$swellToDirection),
+		$author$project$Swell$swellNextHourDecoder(now));
+};
+var $author$project$Main$getSwellDirections = F3(
+	function (url, zone, time) {
+		return $elm$http$Http$get(
+			{
+				expect: A2(
+					$elm$http$Http$expectJson,
+					A2($elm$core$Basics$composeR, $krisajenkins$remotedata$RemoteData$fromResult, $author$project$Main$GotSwells),
+					$author$project$Swell$swellsDirectionsDecoder(
+						A2($author$project$Main$getNextHour, zone, time))),
+				url: url
+			});
+	});
+var $author$project$Main$GotHeight = function (a) {
+	return {$: 'GotHeight', a: a};
+};
+var $author$project$SurfHeight$SurfHeight = F2(
+	function (a, b) {
+		return {$: 'SurfHeight', a: a, b: b};
+	});
+var $author$project$SurfHeight$surfToHeight = function (surf) {
+	return A2($author$project$SurfHeight$SurfHeight, surf.min, surf.max);
 };
 var $author$project$SurfHeight$filterNextHour = F2(
 	function (now, datapoints) {
@@ -11888,14 +12050,6 @@ var $author$project$SurfHeight$filterNextHour = F2(
 var $author$project$SurfHeight$SwellDataPoint = F3(
 	function (timestamp, surf, swells) {
 		return {surf: surf, swells: swells, timestamp: timestamp};
-	});
-var $NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$custom = $elm$json$Json$Decode$map2($elm$core$Basics$apR);
-var $NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required = F3(
-	function (key, valDecoder, decoder) {
-		return A2(
-			$NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$custom,
-			A2($elm$json$Json$Decode$field, key, valDecoder),
-			decoder);
 	});
 var $author$project$SurfHeight$Surf = F3(
 	function (min, max, optimalScore) {
@@ -11974,18 +12128,6 @@ var $author$project$SurfHeight$heightDecoder = function (now) {
 			$author$project$SurfHeight$surfToHeight),
 		$author$project$SurfHeight$swellNextHourDecoder(now));
 };
-var $author$project$Main$getSwellDirections = F3(
-	function (url, zone, time) {
-		return $elm$http$Http$get(
-			{
-				expect: A2(
-					$elm$http$Http$expectJson,
-					A2($elm$core$Basics$composeR, $krisajenkins$remotedata$RemoteData$fromResult, $author$project$Main$GotHeight),
-					$author$project$SurfHeight$heightDecoder(
-						A2($author$project$Main$getNextHour, zone, time))),
-				url: url
-			});
-	});
 var $author$project$Main$getWavesHeight = F3(
 	function (url, zone, time) {
 		return $elm$http$Http$get(
@@ -12000,25 +12142,6 @@ var $author$project$Main$getWavesHeight = F3(
 	});
 var $author$project$Main$GotWindDirection = function (a) {
 	return {$: 'GotWindDirection', a: a};
-};
-var $author$project$Direction$E = {$: 'E'};
-var $author$project$Direction$ENE = {$: 'ENE'};
-var $author$project$Direction$ESE = {$: 'ESE'};
-var $author$project$Direction$N = {$: 'N'};
-var $author$project$Direction$NE = {$: 'NE'};
-var $author$project$Direction$NNE = {$: 'NNE'};
-var $author$project$Direction$NNW = {$: 'NNW'};
-var $author$project$Direction$NW = {$: 'NW'};
-var $author$project$Direction$S = {$: 'S'};
-var $author$project$Direction$SE = {$: 'SE'};
-var $author$project$Direction$SSE = {$: 'SSE'};
-var $author$project$Direction$SSW = {$: 'SSW'};
-var $author$project$Direction$SW = {$: 'SW'};
-var $author$project$Direction$W = {$: 'W'};
-var $author$project$Direction$WNW = {$: 'WNW'};
-var $author$project$Direction$WSW = {$: 'WSW'};
-var $author$project$Direction$parseDegreeToDirection = function (degree) {
-	return (degree < 22.5) ? $author$project$Direction$N : ((degree < 45.0) ? $author$project$Direction$NNE : ((degree < 67.5) ? $author$project$Direction$NE : ((degree < 90) ? $author$project$Direction$ENE : ((degree < 112.5) ? $author$project$Direction$E : ((degree < 135.0) ? $author$project$Direction$ESE : ((degree < 157.5) ? $author$project$Direction$SE : ((degree < 180.0) ? $author$project$Direction$SSE : ((degree < 202.5) ? $author$project$Direction$S : ((degree < 225.0) ? $author$project$Direction$SSW : ((degree < 247.5) ? $author$project$Direction$SW : ((degree < 270.0) ? $author$project$Direction$WSW : ((degree < 292.5) ? $author$project$Direction$W : ((degree < 315.0) ? $author$project$Direction$WNW : ((degree < 337.5) ? $author$project$Direction$NW : $author$project$Direction$NNW))))))))))))));
 };
 var $author$project$Wind$filterNextHour = F2(
 	function (now, datapoints) {
@@ -12409,7 +12532,9 @@ var $author$project$Main$update = F2(
 				return _Utils_Tuple2(
 					_Utils_update(
 						model,
-						{surfHeight: surfHeight}),
+						{
+							surfHeight: A2($elm$core$Debug$log, 'sdfsf', surfHeight)
+						}),
 					$elm$core$Platform$Cmd$none);
 		}
 	});

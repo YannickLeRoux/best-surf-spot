@@ -1,4 +1,4 @@
-module Swell exposing (Swell, swellsDirectionsDecoder)
+module Swell exposing (Swell, swellToDirection, swellsDirectionsDecoder)
 
 import Direction exposing (Direction, parseDegreeToDirection)
 import Json.Decode as JD exposing (Decoder, at, fail, float, int, list, succeed)

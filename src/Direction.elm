@@ -1,4 +1,4 @@
-module Direction exposing (Direction, parseDegreeToDirection, stringToDirectionDecoder)
+module Direction exposing (Direction(..), parseDegreeToDirection, stringToDirectionDecoder)
 
 import Json.Decode as JD exposing (Decoder)
 

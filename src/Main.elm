@@ -98,7 +98,7 @@ getSwellDirections : String -> Time.Zone -> Time.Posix -> Cmd Msg
 getSwellDirections url zone time =
     Http.get
         { url = url
-        , expect = expectJson (RemoteData.fromResult >> GotHeight) <| heightDecoder <| getNextHour zone time
+        , expect = expectJson (RemoteData.fromResult >> GotSwells) <| swellsDirectionsDecoder <| getNextHour zone time
         }
 
 
@@ -151,7 +151,7 @@ update msg model =
             ( { model | tide = tide }, Cmd.none )
 
         GotHeight surfHeight ->
-            ( { model | surfHeight = surfHeight }, Cmd.none )
+            ( { model | surfHeight = Debug.log "sdfsf" surfHeight }, Cmd.none )
 
 
 getNextHour : Time.Zone -> Time.Posix -> Int
