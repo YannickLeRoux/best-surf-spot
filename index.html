@@ -10813,7 +10813,6 @@ var $author$project$Main$initialModel = {
 };
 var $elm$core$Platform$Sub$batch = _Platform_batch;
 var $elm$core$Platform$Sub$none = $elm$core$Platform$Sub$batch(_List_Nil);
-var $elm$core$Debug$log = _Debug_log;
 var $author$project$Main$GotSurfSpots = function (a) {
 	return {$: 'GotSurfSpots', a: a};
 };
@@ -12482,6 +12481,37 @@ var $author$project$Main$makeRequests = F2(
 					})
 				]));
 	});
+var $krisajenkins$remotedata$RemoteData$NotAsked = {$: 'NotAsked'};
+var $krisajenkins$remotedata$RemoteData$map = F2(
+	function (f, data) {
+		switch (data.$) {
+			case 'Success':
+				var value = data.a;
+				return $krisajenkins$remotedata$RemoteData$Success(
+					f(value));
+			case 'Loading':
+				return $krisajenkins$remotedata$RemoteData$Loading;
+			case 'NotAsked':
+				return $krisajenkins$remotedata$RemoteData$NotAsked;
+			default:
+				var error = data.a;
+				return $krisajenkins$remotedata$RemoteData$Failure(error);
+		}
+	});
+var $author$project$Main$updateSingleSpotScore = function (spot) {
+	return _Utils_update(
+		spot,
+		{score: 1234});
+};
+var $author$project$Main$updateSpotsScores = function (model) {
+	var updatedSpots = A2(
+		$krisajenkins$remotedata$RemoteData$map,
+		$elm$core$List$map($author$project$Main$updateSingleSpotScore),
+		model.surfSpots);
+	return _Utils_update(
+		model,
+		{surfSpots: updatedSpots});
+};
 var $author$project$Main$update = F2(
 	function (msg, model) {
 		switch (msg.$) {
@@ -12527,135 +12557,48 @@ var $author$project$Main$update = F2(
 						model,
 						{tide: tide}),
 					$elm$core$Platform$Cmd$none);
-			default:
+			case 'GotHeight':
 				var surfHeight = msg.a;
 				return _Utils_Tuple2(
 					_Utils_update(
 						model,
-						{
-							surfHeight: A2($elm$core$Debug$log, 'sdfsf', surfHeight)
-						}),
+						{surfHeight: surfHeight}),
+					$elm$core$Platform$Cmd$none);
+			default:
+				var mdl = msg.a;
+				return _Utils_Tuple2(
+					$author$project$Main$updateSpotsScores(mdl),
 					$elm$core$Platform$Cmd$none);
 		}
 	});
-var $author$project$Main$FiveData = F5(
-	function (a, b, c, d, e) {
-		return {$: 'FiveData', a: a, b: b, c: c, d: d, e: e};
-	});
-var $krisajenkins$remotedata$RemoteData$NotAsked = {$: 'NotAsked'};
-var $krisajenkins$remotedata$RemoteData$andMap = F2(
-	function (wrappedValue, wrappedFunction) {
-		var _v0 = _Utils_Tuple2(wrappedFunction, wrappedValue);
-		_v0$2:
-		while (true) {
-			_v0$3:
-			while (true) {
-				_v0$4:
-				while (true) {
-					_v0$5:
-					while (true) {
-						switch (_v0.a.$) {
-							case 'Success':
-								switch (_v0.b.$) {
-									case 'Success':
-										var f = _v0.a.a;
-										var value = _v0.b.a;
-										return $krisajenkins$remotedata$RemoteData$Success(
-											f(value));
-									case 'Failure':
-										break _v0$2;
-									case 'Loading':
-										break _v0$4;
-									default:
-										var _v4 = _v0.b;
-										return $krisajenkins$remotedata$RemoteData$NotAsked;
-								}
-							case 'Failure':
-								var error = _v0.a.a;
-								return $krisajenkins$remotedata$RemoteData$Failure(error);
-							case 'Loading':
-								switch (_v0.b.$) {
-									case 'Failure':
-										break _v0$2;
-									case 'Loading':
-										break _v0$3;
-									case 'NotAsked':
-										break _v0$3;
-									default:
-										break _v0$3;
-								}
-							default:
-								switch (_v0.b.$) {
-									case 'Failure':
-										break _v0$2;
-									case 'Loading':
-										break _v0$4;
-									case 'NotAsked':
-										break _v0$5;
-									default:
-										break _v0$5;
-								}
-						}
-					}
-					var _v3 = _v0.a;
-					return $krisajenkins$remotedata$RemoteData$NotAsked;
-				}
-				var _v2 = _v0.b;
-				return $krisajenkins$remotedata$RemoteData$Loading;
-			}
-			var _v1 = _v0.a;
-			return $krisajenkins$remotedata$RemoteData$Loading;
-		}
-		var error = _v0.b.a;
-		return $krisajenkins$remotedata$RemoteData$Failure(error);
-	});
-var $krisajenkins$remotedata$RemoteData$map = F2(
-	function (f, data) {
-		switch (data.$) {
-			case 'Success':
-				var value = data.a;
-				return $krisajenkins$remotedata$RemoteData$Success(
-					f(value));
-			case 'Loading':
-				return $krisajenkins$remotedata$RemoteData$Loading;
-			case 'NotAsked':
-				return $krisajenkins$remotedata$RemoteData$NotAsked;
-			default:
-				var error = data.a;
-				return $krisajenkins$remotedata$RemoteData$Failure(error);
-		}
-	});
-var $author$project$Main$checkIfLoaded = F5(
-	function (a, b, c, d, e) {
-		return A2(
-			$krisajenkins$remotedata$RemoteData$andMap,
-			e,
-			A2(
-				$krisajenkins$remotedata$RemoteData$andMap,
-				d,
-				A2(
-					$krisajenkins$remotedata$RemoteData$andMap,
-					c,
-					A2(
-						$krisajenkins$remotedata$RemoteData$andMap,
-						b,
-						A2(
-							$krisajenkins$remotedata$RemoteData$map,
-							F5(
-								function (f, g, h, i, j) {
-									return A5($author$project$Main$FiveData, f, g, h, i, j);
-								}),
-							a)))));
-	});
+var $author$project$Main$FindBestSpot = function (a) {
+	return {$: 'FindBestSpot', a: a};
+};
+var $mdgriffith$elm_ui$Internal$Model$Attr = function (a) {
+	return {$: 'Attr', a: a};
+};
+var $mdgriffith$elm_ui$Internal$Model$Button = {$: 'Button'};
+var $mdgriffith$elm_ui$Internal$Model$Describe = function (a) {
+	return {$: 'Describe', a: a};
+};
 var $mdgriffith$elm_ui$Internal$Model$Unkeyed = function (a) {
 	return {$: 'Unkeyed', a: a};
 };
 var $mdgriffith$elm_ui$Internal$Model$AsEl = {$: 'AsEl'};
 var $mdgriffith$elm_ui$Internal$Model$asEl = $mdgriffith$elm_ui$Internal$Model$AsEl;
+var $mdgriffith$elm_ui$Internal$Style$classes = {above: 'a', active: 'atv', alignBottom: 'ab', alignCenterX: 'cx', alignCenterY: 'cy', alignContainerBottom: 'acb', alignContainerCenterX: 'accx', alignContainerCenterY: 'accy', alignContainerRight: 'acr', alignLeft: 'al', alignRight: 'ar', alignTop: 'at', alignedHorizontally: 'ah', alignedVertically: 'av', any: 's', behind: 'bh', below: 'b', bold: 'w7', borderDashed: 'bd', borderDotted: 'bdt', borderNone: 'bn', borderSolid: 'bs', capturePointerEvents: 'cpe', clip: 'cp', clipX: 'cpx', clipY: 'cpy', column: 'c', container: 'ctr', contentBottom: 'cb', contentCenterX: 'ccx', contentCenterY: 'ccy', contentLeft: 'cl', contentRight: 'cr', contentTop: 'ct', cursorPointer: 'cptr', cursorText: 'ctxt', focus: 'fcs', focusedWithin: 'focus-within', fullSize: 'fs', grid: 'g', hasBehind: 'hbh', heightContent: 'hc', heightExact: 'he', heightFill: 'hf', heightFillPortion: 'hfp', hover: 'hv', imageContainer: 'ic', inFront: 'fr', inputLabel: 'lbl', inputMultiline: 'iml', inputMultilineFiller: 'imlf', inputMultilineParent: 'imlp', inputMultilineWrapper: 'implw', inputText: 'it', italic: 'i', link: 'lnk', nearby: 'nb', noTextSelection: 'notxt', onLeft: 'ol', onRight: 'or', opaque: 'oq', overflowHidden: 'oh', page: 'pg', paragraph: 'p', passPointerEvents: 'ppe', root: 'ui', row: 'r', scrollbars: 'sb', scrollbarsX: 'sbx', scrollbarsY: 'sby', seButton: 'sbt', single: 'e', sizeByCapital: 'cap', spaceEvenly: 'sev', strike: 'sk', text: 't', textCenter: 'tc', textExtraBold: 'w8', textExtraLight: 'w2', textHeavy: 'w9', textJustify: 'tj', textJustifyAll: 'tja', textLeft: 'tl', textLight: 'w3', textMedium: 'w5', textNormalWeight: 'w4', textRight: 'tr', textSemiBold: 'w6', textThin: 'w1', textUnitalicized: 'tun', transition: 'ts', transparent: 'clr', underline: 'u', widthContent: 'wc', widthExact: 'we', widthFill: 'wf', widthFillPortion: 'wfp', wrapped: 'wrp'};
+var $elm$json$Json$Encode$bool = _Json_wrap;
+var $elm$html$Html$Attributes$boolProperty = F2(
+	function (key, bool) {
+		return A2(
+			_VirtualDom_property,
+			key,
+			$elm$json$Json$Encode$bool(bool));
+	});
+var $elm$html$Html$Attributes$disabled = $elm$html$Html$Attributes$boolProperty('disabled');
 var $mdgriffith$elm_ui$Internal$Model$Generic = {$: 'Generic'};
 var $mdgriffith$elm_ui$Internal$Model$div = $mdgriffith$elm_ui$Internal$Model$Generic;
 var $mdgriffith$elm_ui$Internal$Model$NoNearbyChildren = {$: 'NoNearbyChildren'};
-var $mdgriffith$elm_ui$Internal$Style$classes = {above: 'a', active: 'atv', alignBottom: 'ab', alignCenterX: 'cx', alignCenterY: 'cy', alignContainerBottom: 'acb', alignContainerCenterX: 'accx', alignContainerCenterY: 'accy', alignContainerRight: 'acr', alignLeft: 'al', alignRight: 'ar', alignTop: 'at', alignedHorizontally: 'ah', alignedVertically: 'av', any: 's', behind: 'bh', below: 'b', bold: 'w7', borderDashed: 'bd', borderDotted: 'bdt', borderNone: 'bn', borderSolid: 'bs', capturePointerEvents: 'cpe', clip: 'cp', clipX: 'cpx', clipY: 'cpy', column: 'c', container: 'ctr', contentBottom: 'cb', contentCenterX: 'ccx', contentCenterY: 'ccy', contentLeft: 'cl', contentRight: 'cr', contentTop: 'ct', cursorPointer: 'cptr', cursorText: 'ctxt', focus: 'fcs', focusedWithin: 'focus-within', fullSize: 'fs', grid: 'g', hasBehind: 'hbh', heightContent: 'hc', heightExact: 'he', heightFill: 'hf', heightFillPortion: 'hfp', hover: 'hv', imageContainer: 'ic', inFront: 'fr', inputLabel: 'lbl', inputMultiline: 'iml', inputMultilineFiller: 'imlf', inputMultilineParent: 'imlp', inputMultilineWrapper: 'implw', inputText: 'it', italic: 'i', link: 'lnk', nearby: 'nb', noTextSelection: 'notxt', onLeft: 'ol', onRight: 'or', opaque: 'oq', overflowHidden: 'oh', page: 'pg', paragraph: 'p', passPointerEvents: 'ppe', root: 'ui', row: 'r', scrollbars: 'sb', scrollbarsX: 'sbx', scrollbarsY: 'sby', seButton: 'sbt', single: 'e', sizeByCapital: 'cap', spaceEvenly: 'sev', strike: 'sk', text: 't', textCenter: 'tc', textExtraBold: 'w8', textExtraLight: 'w2', textHeavy: 'w9', textJustify: 'tj', textJustifyAll: 'tja', textLeft: 'tl', textLight: 'w3', textMedium: 'w5', textNormalWeight: 'w4', textRight: 'tr', textSemiBold: 'w6', textThin: 'w1', textUnitalicized: 'tun', transition: 'ts', transparent: 'clr', underline: 'u', widthContent: 'wc', widthExact: 'we', widthFill: 'wf', widthFillPortion: 'wfp', wrapped: 'wrp'};
 var $mdgriffith$elm_ui$Internal$Model$columnClass = $mdgriffith$elm_ui$Internal$Style$classes.any + (' ' + $mdgriffith$elm_ui$Internal$Style$classes.column);
 var $mdgriffith$elm_ui$Internal$Model$gridClass = $mdgriffith$elm_ui$Internal$Style$classes.any + (' ' + $mdgriffith$elm_ui$Internal$Style$classes.grid);
 var $mdgriffith$elm_ui$Internal$Model$pageClass = $mdgriffith$elm_ui$Internal$Style$classes.any + (' ' + $mdgriffith$elm_ui$Internal$Style$classes.page);
@@ -17944,16 +17887,244 @@ var $mdgriffith$elm_ui$Internal$Model$element = F4(
 				$mdgriffith$elm_ui$Internal$Model$NoNearbyChildren,
 				$elm$core$List$reverse(attributes)));
 	});
+var $mdgriffith$elm_ui$Internal$Model$NoAttribute = {$: 'NoAttribute'};
+var $mdgriffith$elm_ui$Element$Input$hasFocusStyle = function (attr) {
+	if (((attr.$ === 'StyleClass') && (attr.b.$ === 'PseudoSelector')) && (attr.b.a.$ === 'Focus')) {
+		var _v1 = attr.b;
+		var _v2 = _v1.a;
+		return true;
+	} else {
+		return false;
+	}
+};
+var $mdgriffith$elm_ui$Internal$Model$htmlClass = function (cls) {
+	return $mdgriffith$elm_ui$Internal$Model$Attr(
+		$elm$html$Html$Attributes$class(cls));
+};
+var $mdgriffith$elm_ui$Element$Input$focusDefault = function (attrs) {
+	return A2($elm$core$List$any, $mdgriffith$elm_ui$Element$Input$hasFocusStyle, attrs) ? $mdgriffith$elm_ui$Internal$Model$NoAttribute : $mdgriffith$elm_ui$Internal$Model$htmlClass('focusable');
+};
 var $mdgriffith$elm_ui$Internal$Model$Height = function (a) {
 	return {$: 'Height', a: a};
 };
 var $mdgriffith$elm_ui$Element$height = $mdgriffith$elm_ui$Internal$Model$Height;
+var $mdgriffith$elm_ui$Element$Events$onClick = A2($elm$core$Basics$composeL, $mdgriffith$elm_ui$Internal$Model$Attr, $elm$html$Html$Events$onClick);
+var $mdgriffith$elm_ui$Element$Input$enter = 'Enter';
+var $elm$virtual_dom$VirtualDom$MayPreventDefault = function (a) {
+	return {$: 'MayPreventDefault', a: a};
+};
+var $elm$html$Html$Events$preventDefaultOn = F2(
+	function (event, decoder) {
+		return A2(
+			$elm$virtual_dom$VirtualDom$on,
+			event,
+			$elm$virtual_dom$VirtualDom$MayPreventDefault(decoder));
+	});
+var $mdgriffith$elm_ui$Element$Input$onKey = F2(
+	function (desiredCode, msg) {
+		var decode = function (code) {
+			return _Utils_eq(code, desiredCode) ? $elm$json$Json$Decode$succeed(msg) : $elm$json$Json$Decode$fail('Not the enter key');
+		};
+		var isKey = A2(
+			$elm$json$Json$Decode$andThen,
+			decode,
+			A2($elm$json$Json$Decode$field, 'key', $elm$json$Json$Decode$string));
+		return $mdgriffith$elm_ui$Internal$Model$Attr(
+			A2(
+				$elm$html$Html$Events$preventDefaultOn,
+				'keyup',
+				A2(
+					$elm$json$Json$Decode$map,
+					function (fired) {
+						return _Utils_Tuple2(fired, true);
+					},
+					isKey)));
+	});
+var $mdgriffith$elm_ui$Element$Input$onEnter = function (msg) {
+	return A2($mdgriffith$elm_ui$Element$Input$onKey, $mdgriffith$elm_ui$Element$Input$enter, msg);
+};
+var $mdgriffith$elm_ui$Internal$Model$Class = F2(
+	function (a, b) {
+		return {$: 'Class', a: a, b: b};
+	});
+var $mdgriffith$elm_ui$Internal$Flag$cursor = $mdgriffith$elm_ui$Internal$Flag$flag(21);
+var $mdgriffith$elm_ui$Element$pointer = A2($mdgriffith$elm_ui$Internal$Model$Class, $mdgriffith$elm_ui$Internal$Flag$cursor, $mdgriffith$elm_ui$Internal$Style$classes.cursorPointer);
 var $mdgriffith$elm_ui$Internal$Model$Content = {$: 'Content'};
 var $mdgriffith$elm_ui$Element$shrink = $mdgriffith$elm_ui$Internal$Model$Content;
+var $elm$html$Html$Attributes$tabindex = function (n) {
+	return A2(
+		_VirtualDom_attribute,
+		'tabIndex',
+		$elm$core$String$fromInt(n));
+};
 var $mdgriffith$elm_ui$Internal$Model$Width = function (a) {
 	return {$: 'Width', a: a};
 };
 var $mdgriffith$elm_ui$Element$width = $mdgriffith$elm_ui$Internal$Model$Width;
+var $mdgriffith$elm_ui$Element$Input$button = F2(
+	function (attrs, _v0) {
+		var onPress = _v0.onPress;
+		var label = _v0.label;
+		return A4(
+			$mdgriffith$elm_ui$Internal$Model$element,
+			$mdgriffith$elm_ui$Internal$Model$asEl,
+			$mdgriffith$elm_ui$Internal$Model$div,
+			A2(
+				$elm$core$List$cons,
+				$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$shrink),
+				A2(
+					$elm$core$List$cons,
+					$mdgriffith$elm_ui$Element$height($mdgriffith$elm_ui$Element$shrink),
+					A2(
+						$elm$core$List$cons,
+						$mdgriffith$elm_ui$Internal$Model$htmlClass($mdgriffith$elm_ui$Internal$Style$classes.contentCenterX + (' ' + ($mdgriffith$elm_ui$Internal$Style$classes.contentCenterY + (' ' + ($mdgriffith$elm_ui$Internal$Style$classes.seButton + (' ' + $mdgriffith$elm_ui$Internal$Style$classes.noTextSelection)))))),
+						A2(
+							$elm$core$List$cons,
+							$mdgriffith$elm_ui$Element$pointer,
+							A2(
+								$elm$core$List$cons,
+								$mdgriffith$elm_ui$Element$Input$focusDefault(attrs),
+								A2(
+									$elm$core$List$cons,
+									$mdgriffith$elm_ui$Internal$Model$Describe($mdgriffith$elm_ui$Internal$Model$Button),
+									A2(
+										$elm$core$List$cons,
+										$mdgriffith$elm_ui$Internal$Model$Attr(
+											$elm$html$Html$Attributes$tabindex(0)),
+										function () {
+											if (onPress.$ === 'Nothing') {
+												return A2(
+													$elm$core$List$cons,
+													$mdgriffith$elm_ui$Internal$Model$Attr(
+														$elm$html$Html$Attributes$disabled(true)),
+													attrs);
+											} else {
+												var msg = onPress.a;
+												return A2(
+													$elm$core$List$cons,
+													$mdgriffith$elm_ui$Element$Events$onClick(msg),
+													A2(
+														$elm$core$List$cons,
+														$mdgriffith$elm_ui$Element$Input$onEnter(msg),
+														attrs));
+											}
+										}()))))))),
+			$mdgriffith$elm_ui$Internal$Model$Unkeyed(
+				_List_fromArray(
+					[label])));
+	});
+var $author$project$Main$FiveData = F5(
+	function (a, b, c, d, e) {
+		return {$: 'FiveData', a: a, b: b, c: c, d: d, e: e};
+	});
+var $krisajenkins$remotedata$RemoteData$andMap = F2(
+	function (wrappedValue, wrappedFunction) {
+		var _v0 = _Utils_Tuple2(wrappedFunction, wrappedValue);
+		_v0$2:
+		while (true) {
+			_v0$3:
+			while (true) {
+				_v0$4:
+				while (true) {
+					_v0$5:
+					while (true) {
+						switch (_v0.a.$) {
+							case 'Success':
+								switch (_v0.b.$) {
+									case 'Success':
+										var f = _v0.a.a;
+										var value = _v0.b.a;
+										return $krisajenkins$remotedata$RemoteData$Success(
+											f(value));
+									case 'Failure':
+										break _v0$2;
+									case 'Loading':
+										break _v0$4;
+									default:
+										var _v4 = _v0.b;
+										return $krisajenkins$remotedata$RemoteData$NotAsked;
+								}
+							case 'Failure':
+								var error = _v0.a.a;
+								return $krisajenkins$remotedata$RemoteData$Failure(error);
+							case 'Loading':
+								switch (_v0.b.$) {
+									case 'Failure':
+										break _v0$2;
+									case 'Loading':
+										break _v0$3;
+									case 'NotAsked':
+										break _v0$3;
+									default:
+										break _v0$3;
+								}
+							default:
+								switch (_v0.b.$) {
+									case 'Failure':
+										break _v0$2;
+									case 'Loading':
+										break _v0$4;
+									case 'NotAsked':
+										break _v0$5;
+									default:
+										break _v0$5;
+								}
+						}
+					}
+					var _v3 = _v0.a;
+					return $krisajenkins$remotedata$RemoteData$NotAsked;
+				}
+				var _v2 = _v0.b;
+				return $krisajenkins$remotedata$RemoteData$Loading;
+			}
+			var _v1 = _v0.a;
+			return $krisajenkins$remotedata$RemoteData$Loading;
+		}
+		var error = _v0.b.a;
+		return $krisajenkins$remotedata$RemoteData$Failure(error);
+	});
+var $author$project$Main$checkIfLoaded = F5(
+	function (a, b, c, d, e) {
+		return A2(
+			$krisajenkins$remotedata$RemoteData$andMap,
+			e,
+			A2(
+				$krisajenkins$remotedata$RemoteData$andMap,
+				d,
+				A2(
+					$krisajenkins$remotedata$RemoteData$andMap,
+					c,
+					A2(
+						$krisajenkins$remotedata$RemoteData$andMap,
+						b,
+						A2(
+							$krisajenkins$remotedata$RemoteData$map,
+							F5(
+								function (f, g, h, i, j) {
+									return A5($author$project$Main$FiveData, f, g, h, i, j);
+								}),
+							a)))));
+	});
+var $mdgriffith$elm_ui$Internal$Model$AsColumn = {$: 'AsColumn'};
+var $mdgriffith$elm_ui$Internal$Model$asColumn = $mdgriffith$elm_ui$Internal$Model$AsColumn;
+var $mdgriffith$elm_ui$Element$column = F2(
+	function (attrs, children) {
+		return A4(
+			$mdgriffith$elm_ui$Internal$Model$element,
+			$mdgriffith$elm_ui$Internal$Model$asColumn,
+			$mdgriffith$elm_ui$Internal$Model$div,
+			A2(
+				$elm$core$List$cons,
+				$mdgriffith$elm_ui$Internal$Model$htmlClass($mdgriffith$elm_ui$Internal$Style$classes.contentTop + (' ' + $mdgriffith$elm_ui$Internal$Style$classes.contentLeft)),
+				A2(
+					$elm$core$List$cons,
+					$mdgriffith$elm_ui$Element$height($mdgriffith$elm_ui$Element$shrink),
+					A2(
+						$elm$core$List$cons,
+						$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$shrink),
+						attrs))),
+			$mdgriffith$elm_ui$Internal$Model$Unkeyed(children));
+	});
 var $mdgriffith$elm_ui$Element$el = F2(
 	function (attrs, child) {
 		return A4(
@@ -17987,13 +18158,6 @@ var $author$project$Main$errorToString = function (err) {
 			var status = err.a;
 			return 'Returning ' + ($elm$core$String$fromInt(status) + ' status');
 	}
-};
-var $mdgriffith$elm_ui$Internal$Model$Attr = function (a) {
-	return {$: 'Attr', a: a};
-};
-var $mdgriffith$elm_ui$Internal$Model$htmlClass = function (cls) {
-	return $mdgriffith$elm_ui$Internal$Model$Attr(
-		$elm$html$Html$Attributes$class(cls));
 };
 var $mdgriffith$elm_ui$Internal$Model$OnlyDynamic = F2(
 	function (a, b) {
@@ -18290,11 +18454,68 @@ var $mdgriffith$elm_ui$Element$padding = function (x) {
 			f,
 			f));
 };
+var $mdgriffith$elm_ui$Internal$Model$AsRow = {$: 'AsRow'};
+var $mdgriffith$elm_ui$Internal$Model$asRow = $mdgriffith$elm_ui$Internal$Model$AsRow;
+var $mdgriffith$elm_ui$Element$row = F2(
+	function (attrs, children) {
+		return A4(
+			$mdgriffith$elm_ui$Internal$Model$element,
+			$mdgriffith$elm_ui$Internal$Model$asRow,
+			$mdgriffith$elm_ui$Internal$Model$div,
+			A2(
+				$elm$core$List$cons,
+				$mdgriffith$elm_ui$Internal$Model$htmlClass($mdgriffith$elm_ui$Internal$Style$classes.contentLeft + (' ' + $mdgriffith$elm_ui$Internal$Style$classes.contentCenterY)),
+				A2(
+					$elm$core$List$cons,
+					$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$shrink),
+					A2(
+						$elm$core$List$cons,
+						$mdgriffith$elm_ui$Element$height($mdgriffith$elm_ui$Element$shrink),
+						attrs))),
+			$mdgriffith$elm_ui$Internal$Model$Unkeyed(children));
+	});
 var $mdgriffith$elm_ui$Internal$Model$Text = function (a) {
 	return {$: 'Text', a: a};
 };
 var $mdgriffith$elm_ui$Element$text = function (content) {
 	return $mdgriffith$elm_ui$Internal$Model$Text(content);
+};
+var $krisajenkins$remotedata$RemoteData$withDefault = F2(
+	function (_default, data) {
+		if (data.$ === 'Success') {
+			var x = data.a;
+			return x;
+		} else {
+			return _default;
+		}
+	});
+var $krisajenkins$remotedata$RemoteData$toMaybe = A2(
+	$elm$core$Basics$composeR,
+	$krisajenkins$remotedata$RemoteData$map($elm$core$Maybe$Just),
+	$krisajenkins$remotedata$RemoteData$withDefault($elm$core$Maybe$Nothing));
+var $author$project$Main$renderSpots = function (spots) {
+	var _v0 = $krisajenkins$remotedata$RemoteData$toMaybe(spots);
+	if (_v0.$ === 'Just') {
+		var s = _v0.a;
+		return A2(
+			$mdgriffith$elm_ui$Element$column,
+			_List_Nil,
+			A2(
+				$elm$core$List$map,
+				function (spot) {
+					return A2(
+						$mdgriffith$elm_ui$Element$row,
+						_List_Nil,
+						_List_fromArray(
+							[
+								$mdgriffith$elm_ui$Element$text(
+								'Name: ' + (spot.name + (' ,score: ' + $elm$core$String$fromInt(spot.score))))
+							]));
+				},
+				s));
+	} else {
+		return $mdgriffith$elm_ui$Element$text('Nothing');
+	}
 };
 var $author$project$Main$view = function (model) {
 	return A2(
@@ -18320,9 +18541,26 @@ var $author$project$Main$view = function (model) {
 						$mdgriffith$elm_ui$Element$text('Loading...'));
 				case 'Success':
 					return A2(
-						$mdgriffith$elm_ui$Element$el,
+						$mdgriffith$elm_ui$Element$column,
 						_List_Nil,
-						$mdgriffith$elm_ui$Element$text('Success'));
+						_List_fromArray(
+							[
+								A2(
+								$mdgriffith$elm_ui$Element$row,
+								_List_Nil,
+								_List_fromArray(
+									[
+										A2(
+										$mdgriffith$elm_ui$Element$Input$button,
+										_List_Nil,
+										{
+											label: $mdgriffith$elm_ui$Element$text('Find the best spot around'),
+											onPress: $elm$core$Maybe$Just(
+												$author$project$Main$FindBestSpot(model))
+										})
+									])),
+								$author$project$Main$renderSpots(model.surfSpots)
+							]));
 				default:
 					return A2(
 						$mdgriffith$elm_ui$Element$el,
@@ -18343,7 +18581,7 @@ var $author$project$Main$main = $elm$browser$Browser$element(
 		view: $author$project$Main$view
 	});
 _Platform_export({'Main':{'init':$author$project$Main$main(
-	$elm$json$Json$Decode$succeed(_Utils_Tuple0))({"versions":{"elm":"0.19.1"},"types":{"message":"Main.Msg","aliases":{"IdealConditions.IdealConditions":{"args":[],"type":"{ swellDirection : List.List Direction.Direction, windDirection : List.List Direction.Direction, surfHeight : ( Basics.Int, Basics.Int ), tide : Tide.Tide }"},"SurfSpot.SurfSpot":{"args":[],"type":"{ id : Basics.Int, name : String.String, idealConditions : IdealConditions.IdealConditions, score : Basics.Int }"},"RemoteData.WebData":{"args":["a"],"type":"RemoteData.RemoteData Http.Error a"},"Time.Era":{"args":[],"type":"{ start : Basics.Int, offset : Basics.Int }"}},"unions":{"Main.Msg":{"args":[],"tags":{"GotSurfSpots":["RemoteData.WebData (List.List SurfSpot.SurfSpot)"],"GotWindDirection":["RemoteData.WebData Direction.Direction"],"GotSwells":["RemoteData.WebData (List.List Direction.Direction)"],"GotTide":["RemoteData.WebData Tide.Tide"],"GotHeight":["RemoteData.WebData SurfHeight.SurfHeight"],"AdjustTimeZone":["Time.Zone"],"GetTime":["Time.Posix"]}},"Direction.Direction":{"args":[],"tags":{"N":[],"E":[],"S":[],"W":[],"NE":[],"SE":[],"SW":[],"NW":[],"NNE":[],"ENE":[],"ESE":[],"SSE":[],"SSW":[],"WSW":[],"WNW":[],"NNW":[]}},"Http.Error":{"args":[],"tags":{"BadUrl":["String.String"],"Timeout":[],"NetworkError":[],"BadStatus":["Basics.Int"],"BadBody":["String.String"]}},"Basics.Int":{"args":[],"tags":{"Int":[]}},"List.List":{"args":["a"],"tags":{}},"Time.Posix":{"args":[],"tags":{"Posix":["Basics.Int"]}},"RemoteData.RemoteData":{"args":["e","a"],"tags":{"NotAsked":[],"Loading":[],"Failure":["e"],"Success":["a"]}},"String.String":{"args":[],"tags":{"String":[]}},"SurfHeight.SurfHeight":{"args":[],"tags":{"SurfHeight":["Basics.Float","Basics.Float"]}},"Tide.Tide":{"args":[],"tags":{"Low":[],"Mid":[],"High":[]}},"Time.Zone":{"args":[],"tags":{"Zone":["Basics.Int","List.List Time.Era"]}},"Basics.Float":{"args":[],"tags":{"Float":[]}}}}})}});}(this));
+	$elm$json$Json$Decode$succeed(_Utils_Tuple0))({"versions":{"elm":"0.19.1"},"types":{"message":"Main.Msg","aliases":{"IdealConditions.IdealConditions":{"args":[],"type":"{ swellDirection : List.List Direction.Direction, windDirection : List.List Direction.Direction, surfHeight : ( Basics.Int, Basics.Int ), tide : Tide.Tide }"},"Main.Model":{"args":[],"type":"{ surfSpots : RemoteData.WebData (List.List SurfSpot.SurfSpot), swellDirections : RemoteData.WebData (List.List Direction.Direction), windDirection : RemoteData.WebData Direction.Direction, surfHeight : RemoteData.WebData SurfHeight.SurfHeight, tide : RemoteData.WebData Tide.Tide, zone : Time.Zone, time : Time.Posix }"},"SurfSpot.SurfSpot":{"args":[],"type":"{ id : Basics.Int, name : String.String, idealConditions : IdealConditions.IdealConditions, score : Basics.Int }"},"RemoteData.WebData":{"args":["a"],"type":"RemoteData.RemoteData Http.Error a"},"Time.Era":{"args":[],"type":"{ start : Basics.Int, offset : Basics.Int }"}},"unions":{"Main.Msg":{"args":[],"tags":{"GotSurfSpots":["RemoteData.WebData (List.List SurfSpot.SurfSpot)"],"GotWindDirection":["RemoteData.WebData Direction.Direction"],"GotSwells":["RemoteData.WebData (List.List Direction.Direction)"],"GotTide":["RemoteData.WebData Tide.Tide"],"GotHeight":["RemoteData.WebData SurfHeight.SurfHeight"],"AdjustTimeZone":["Time.Zone"],"GetTime":["Time.Posix"],"FindBestSpot":["Main.Model"]}},"Direction.Direction":{"args":[],"tags":{"N":[],"E":[],"S":[],"W":[],"NE":[],"SE":[],"SW":[],"NW":[],"NNE":[],"ENE":[],"ESE":[],"SSE":[],"SSW":[],"WSW":[],"WNW":[],"NNW":[]}},"Http.Error":{"args":[],"tags":{"BadUrl":["String.String"],"Timeout":[],"NetworkError":[],"BadStatus":["Basics.Int"],"BadBody":["String.String"]}},"Basics.Int":{"args":[],"tags":{"Int":[]}},"List.List":{"args":["a"],"tags":{}},"Time.Posix":{"args":[],"tags":{"Posix":["Basics.Int"]}},"RemoteData.RemoteData":{"args":["e","a"],"tags":{"NotAsked":[],"Loading":[],"Failure":["e"],"Success":["a"]}},"String.String":{"args":[],"tags":{"String":[]}},"SurfHeight.SurfHeight":{"args":[],"tags":{"SurfHeight":["Basics.Float","Basics.Float"]}},"Tide.Tide":{"args":[],"tags":{"Low":[],"Mid":[],"High":[]}},"Time.Zone":{"args":[],"tags":{"Zone":["Basics.Int","List.List Time.Era"]}},"Basics.Float":{"args":[],"tags":{"Float":[]}}}}})}});}(this));
 
   var app = Elm.Main.init({ node: document.getElementById("elm") });
 }

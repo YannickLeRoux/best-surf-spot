@@ -6,8 +6,18 @@
       "idealConditions": {
         "swellDirection": ["N", "S"],
         "windDirection": ["N", "S"],
-        "surfHeight": [6, 8],
+        "surfHeight": [2, 3],
         "tide": "Low"
+      }
+    },
+    {
+      "id": 2,
+      "name": "Test 2",
+      "idealConditions": {
+        "swellDirection": ["SW", "S", "W"],
+        "windDirection": ["W", "E"],
+        "surfHeight": [6, 8],
+        "tide": "NORMAL"
       }
     }
   ]

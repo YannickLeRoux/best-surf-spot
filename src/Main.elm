@@ -3,10 +3,11 @@ module Main exposing (main)
 import Browser
 import Direction exposing (Direction(..))
 import Element exposing (..)
+import Element.Input exposing (button)
 import Html exposing (Html)
 import Http exposing (expectJson)
 import Json.Decode exposing (list)
-import RemoteData exposing (RemoteData(..), WebData, andMap)
+import RemoteData exposing (RemoteData(..), WebData, andMap, toMaybe, unpack)
 import SurfHeight exposing (SurfHeight, heightDecoder)
 import SurfSpot exposing (SurfSpot, spotDecoder)
 import Swell exposing (swellsDirectionsDecoder)
@@ -126,6 +127,7 @@ type Msg
     | GotHeight (WebData SurfHeight)
     | AdjustTimeZone Time.Zone
     | GetTime Time.Posix
+    | FindBestSpot Model
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -151,7 +153,10 @@ update msg model =
             ( { model | tide = tide }, Cmd.none )
 
         GotHeight surfHeight ->
-            ( { model | surfHeight = Debug.log "sdfsf" surfHeight }, Cmd.none )
+            ( { model | surfHeight = surfHeight }, Cmd.none )
+
+        FindBestSpot mdl ->
+            ( updateSpotsScores mdl, Cmd.none )
 
 
 getNextHour : Time.Zone -> Time.Posix -> Int
@@ -193,6 +198,16 @@ errorToString err =
 -- VIEW
 
 
+renderSpots : WebData (List SurfSpot) -> Element Msg
+renderSpots spots =
+    case toMaybe spots of
+        Just s ->
+            column [] (List.map (\spot -> row [] [ text ("Name: " ++ spot.name ++ " ,score: " ++ String.fromInt spot.score) ]) s)
+
+        _ ->
+            text "Nothing"
+
+
 view : Model -> Html Msg
 view model =
     layout [ padding 80 ] <|
@@ -204,7 +219,11 @@ view model =
                 el [] (text "Loading...")
 
             Success _ ->
-                el [] (text "Success")
+                column []
+                    [ row []
+                        [ button [] { label = text "Find the best spot around", onPress = Just (FindBestSpot model) } ]
+                    , renderSpots model.surfSpots
+                    ]
 
             NotAsked ->
                 el [] (text "Not asked...")
@@ -222,3 +241,21 @@ main =
         , update = update
         , subscriptions = \_ -> Sub.none
         }
+
+
+
+-- calculate score
+
+
+updateSpotsScores : Model -> Model
+updateSpotsScores model =
+    let
+        updatedSpots =
+            RemoteData.map (List.map updateSingleSpotScore) model.surfSpots
+    in
+    { model | surfSpots = updatedSpots }
+
+
+updateSingleSpotScore : SurfSpot -> SurfSpot
+updateSingleSpotScore spot =
+    { spot | score = 1234 }
