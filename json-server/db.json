@@ -12,12 +12,12 @@
     },
     {
       "id": 2,
-      "name": "Test 2",
+      "name": "Sunset Cliffs",
       "idealConditions": {
         "swellDirection": ["SW", "S", "W"],
         "windDirection": ["W", "E"],
-        "surfHeight": [6, 8],
-        "tide": "NORMAL"
+        "surfHeight": [4, 6],
+        "tide": "Low"
       }
     }
   ]

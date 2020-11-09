@@ -3,11 +3,12 @@ module Main exposing (main)
 import Browser
 import Direction exposing (Direction(..))
 import Element exposing (..)
+import Element.Background as Background
 import Element.Input exposing (button)
 import Html exposing (Html)
 import Http exposing (expectJson)
 import Json.Decode exposing (list)
-import RemoteData exposing (RemoteData(..), WebData, andMap, toMaybe, unpack)
+import RemoteData exposing (RemoteData(..), WebData, andMap, toMaybe, unwrap)
 import SurfHeight exposing (SurfHeight, heightDecoder)
 import SurfSpot exposing (SurfSpot, spotDecoder)
 import Swell exposing (swellsDirectionsDecoder)
@@ -219,9 +220,22 @@ view model =
                 el [] (text "Loading...")
 
             Success _ ->
+                let
+                    blue =
+                        Element.rgb255 238 238 238
+
+                    purple =
+                        Element.rgb255 250 218 218
+                in
                 column []
                     [ row []
-                        [ button [] { label = text "Find the best spot around", onPress = Just (FindBestSpot model) } ]
+                        [ button
+                            [ Background.color blue
+                            , Element.focused
+                                [ Background.color purple ]
+                            ]
+                            { label = text "Find the best spot around", onPress = Just (FindBestSpot model) }
+                        ]
                     , renderSpots model.surfSpots
                     ]
 
@@ -251,11 +265,44 @@ updateSpotsScores : Model -> Model
 updateSpotsScores model =
     let
         updatedSpots =
-            RemoteData.map (List.map updateSingleSpotScore) model.surfSpots
+            RemoteData.map (List.map (updateSingleSpotScore model)) model.surfSpots
     in
     { model | surfSpots = updatedSpots }
 
 
-updateSingleSpotScore : SurfSpot -> SurfSpot
-updateSingleSpotScore spot =
-    { spot | score = 1234 }
+updateSingleSpotScore : Model -> SurfSpot -> SurfSpot
+updateSingleSpotScore model spot =
+    { spot | score = updatedScore model spot }
+
+
+updatedScore : Model -> SurfSpot -> Int
+updatedScore model spot =
+    let
+        score =
+            0
+    in
+    score |> scoreSwellDirection model spot
+
+
+scoreSwellDirection : Model -> SurfSpot -> Int -> Int
+scoreSwellDirection model spot score =
+    let
+        currentSwell =
+            unwrap [] identity model.swellDirections
+
+        spotSwell =
+            spot.idealConditions.swellDirection
+
+        points =
+            List.foldl
+                (\swell acc ->
+                    if List.member swell currentSwell then
+                        acc + 1
+
+                    else
+                        acc
+                )
+                0
+                spotSwell
+    in
+    score + points
