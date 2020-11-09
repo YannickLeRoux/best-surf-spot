@@ -281,7 +281,7 @@ updatedScore model spot =
         score =
             0
     in
-    score |> scoreSwellDirection model spot
+    score |> scoreSwellDirection model spot |> scoreWindDirection model spot
 
 
 scoreSwellDirection : Model -> SurfSpot -> Int -> Int
@@ -304,5 +304,24 @@ scoreSwellDirection model spot score =
                 )
                 0
                 spotSwell
+    in
+    score + points
+
+
+scoreWindDirection : Model -> SurfSpot -> Int -> Int
+scoreWindDirection model spot score =
+    let
+        currentWind =
+            unwrap N identity model.windDirection
+
+        spotWind =
+            spot.idealConditions.windDirection
+
+        points =
+            if List.member currentWind spotWind then
+                score + 1
+
+            else
+                score
     in
     score + points

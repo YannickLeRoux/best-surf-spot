@@ -12551,10 +12551,21 @@ var $author$project$Main$scoreSwellDirection = F3(
 			spotSwell);
 		return score + points;
 	});
+var $author$project$Main$scoreWindDirection = F3(
+	function (model, spot, score) {
+		var spotWind = spot.idealConditions.windDirection;
+		var currentWind = A3($krisajenkins$remotedata$RemoteData$unwrap, $author$project$Direction$N, $elm$core$Basics$identity, model.windDirection);
+		var points = A2($elm$core$List$member, currentWind, spotWind) ? (score + 1) : score;
+		return score + points;
+	});
 var $author$project$Main$updatedScore = F2(
 	function (model, spot) {
 		var score = 0;
-		return A3($author$project$Main$scoreSwellDirection, model, spot, score);
+		return A3(
+			$author$project$Main$scoreWindDirection,
+			model,
+			spot,
+			A3($author$project$Main$scoreSwellDirection, model, spot, score));
 	});
 var $author$project$Main$updateSingleSpotScore = F2(
 	function (model, spot) {
