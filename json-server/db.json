@@ -2,22 +2,62 @@
   "spots": [
     {
       "id": 1,
-      "name": "Test",
+      "name": "Ocean Beach",
       "idealConditions": {
-        "swellDirection": ["N", "S"],
-        "windDirection": ["N", "S"],
-        "surfHeight": [2, 3],
-        "tide": "Low"
+        "swellDirection": ["W", "NW", "SW"],
+        "windDirection": ["E"],
+        "surfHeight": [3, 6],
+        "tide": "NORMAL"
       }
     },
     {
       "id": 2,
       "name": "Sunset Cliffs",
       "idealConditions": {
-        "swellDirection": ["SW", "S", "W"],
-        "windDirection": ["W", "E"],
-        "surfHeight": [4, 6],
+        "swellDirection": ["W", "NW", "SW"],
+        "windDirection": ["E"],
+        "surfHeight": [3, 6],
         "tide": "Low"
+      }
+    },
+    {
+      "id": 3,
+      "name": "Tourmaline",
+      "idealConditions": {
+        "swellDirection": ["W", "NW", "SW"],
+        "windDirection": ["NE"],
+        "surfHeight": [3, 6],
+        "tide": "NORMAL"
+      }
+    },
+    {
+      "id": 4,
+      "name": "Scripps",
+      "idealConditions": {
+        "swellDirection": ["W", "NW", "SW"],
+        "windDirection": ["NE"],
+        "surfHeight": [3, 6],
+        "tide": "NORMAL"
+      }
+    },
+    {
+      "id": 5,
+      "name": "Blacks",
+      "idealConditions": {
+        "swellDirection": ["W", "NW", "SW"],
+        "windDirection": ["NE"],
+        "surfHeight": [3, 6],
+        "tide": "NORMAL"
+      }
+    },
+    {
+      "id": 6,
+      "name": "Trestles",
+      "idealConditions": {
+        "swellDirection": ["S", "SW", "W", "WNW"],
+        "windDirection": ["E","NE"],
+        "surfHeight": [4, 10],
+        "tide": "NORMAL"
       }
     }
   ]
